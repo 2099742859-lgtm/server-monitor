@@ -4,6 +4,13 @@
 
 set -e
 
+if [ ! -f "$0" ]; then
+    log "ERROR: Cannot run via pipe. Download first:"
+    log "  curl -fsSL -o server-monitor.sh https://github.com/2099742859-lgtm/server-monitor/releases/download/v2/server-monitor.sh"
+    log "  bash server-monitor.sh"
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEST_DIR="${1:-$SCRIPT_DIR/server-monitor}"
 

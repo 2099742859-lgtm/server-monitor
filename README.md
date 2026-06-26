@@ -80,17 +80,11 @@ irm https://raw.githubusercontent.com/2099742859-lgtm/server-monitor/main/server
 
 ### Linux / macOS — `server-monitor.sh`
 
-下载：https://raw.githubusercontent.com/2099742859-lgtm/server-monitor/main/server-monitor.sh
+下载：https://github.com/2099742859-lgtm/server-monitor/releases/download/v2/server-monitor.sh
 
 ```bash
-# 下载
-curl -fsSL -o server-monitor.sh https://raw.githubusercontent.com/2099742859-lgtm/server-monitor/main/server-monitor.sh
-
-# 或一行下载并运行
-curl -fsSL https://raw.githubusercontent.com/2099742859-lgtm/server-monitor/main/server-monitor.sh | bash
-
-chmod +x server-monitor.sh
-./server-monitor.sh
+curl -fsSL -o server-monitor.sh https://github.com/2099742859-lgtm/server-monitor/releases/download/v2/server-monitor.sh
+bash server-monitor.sh
 ```
 
 自动完成同样的流程：安装 uv → 安装 Python → 解压 → 创建 venv → 安装依赖 → 启动。
