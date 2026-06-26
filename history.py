@@ -12,7 +12,6 @@ _DATA_PATH = None
 
 INTERVAL = 5
 RETENTION_DAYS = 7
-MAX_POINTS_QUERY = 300
 FLUSH_EVERY = 12
 
 _RANGE_SECONDS = {
@@ -21,6 +20,14 @@ _RANGE_SECONDS = {
     '24h': 86400,
     '7d': 604800,
 }
+
+_AVG_FIELDS = [
+    'cpu', 'mem_percent', 'mem_used', 'disk_percent',
+    'disk_read_rate', 'disk_write_rate',
+    'net_sent_rate', 'net_recv_rate',
+    'net_bytes_sent', 'net_bytes_recv',
+    'gpu_usage', 'gpu_temp',
+]
 
 
 def _data_path():
@@ -154,11 +161,28 @@ def stop_sampler():
 
 def query_history(range_key='1h'):
     secs = _RANGE_SECONDS.get(range_key, 3600)
+    bucket = {3600: 60, 21600: 300, 86400: 1800, 604800: 7200}.get(secs, 60)
     since = int(time.time()) - secs
     with _LOCK:
         pts = [p for p in _data if p['ts'] >= since]
-    if len(pts) > MAX_POINTS_QUERY:
-        step = len(pts) // MAX_POINTS_QUERY
-        pts = pts[::step]
-    out = [{'ts': p['ts'] * 1000, **{k: v for k, v in p.items() if k != 'ts'}} for p in pts]
-    return {'range': range_key, 'points': out, 'count': len(out)}
+    if not pts:
+        return {'range': range_key, 'points': [], 'count': 0, 'bucket': bucket}
+
+    buckets = {}
+    for p in pts:
+        bt = (p['ts'] // bucket) * bucket
+        buckets.setdefault(bt, []).append(p)
+
+    out = []
+    for bt in sorted(buckets.keys()):
+        grp = buckets[bt]
+        row = {'ts': (bt + bucket // 2) * 1000}
+        for f in _AVG_FIELDS:
+            vals = [p[f] for p in grp if p.get(f) is not None]
+            if vals:
+                v = sum(vals) / len(vals)
+                row[f] = round(v, 1) if isinstance(vals[0], float) else int(v)
+            else:
+                row[f] = None
+        out.append(row)
+    return {'range': range_key, 'points': out, 'count': len(out), 'bucket': bucket}
