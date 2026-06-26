@@ -263,6 +263,24 @@
                 </div>
             </div>
         </div>
+
+        <!-- Version Manager -->
+        <div class="card p-4 md:p-5 mb-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h3 class="text-sm font-semibold text-blue-500" data-i18n="版本管理">Version Manager</h3>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-blue-500" data-i18n="当前版本">Current</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300" id="currentVer">--</span>
+                    <span class="text-[10px] text-blue-500" data-i18n="最新版本">Latest</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-300" id="latestVer">--</span>
+                    <span class="text-[10px] hidden text-amber-400 font-medium" id="updateBadge" data-i18n="有新版本">Update available!</span>
+                </div>
+            </div>
+            <div id="versionList" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                <div class="text-blue-500 text-xs" data-i18n="加载中...">Loading...</div>
+            </div>
+            <div id="updateStatus" class="mt-3 text-xs text-blue-500 hidden"></div>
+        </div>
     </div>
 
     <div id="wallpaper"></div>
@@ -399,7 +417,53 @@
         async function fetchData(){try{const r=await fetch('/api/metrics');if(!r.ok)throw 0;updateUI(await r.json());}catch(e){document.getElementById('statusDot').className='w-1.5 h-1.5 rounded-full bg-red-400 pulse-dot';document.getElementById('statusText').textContent='Offline';}}
         fetchData();setInterval(fetchData,1000);
 
-        const i18n={'加载中...':'Loading...','运行中':'Running','连接失败':'Offline','运行时间':'Uptime','硬件信息':'Hardware Info','CPU 型号':'CPU Model','主板':'Motherboard','系统 / 内核':'System / Kernel','内存模块':'Memory Modules','硬盘':'Disk Drives','网卡':'Network Cards','CPU 使用率':'CPU Usage','物理核心:':'Physical:','逻辑线程:':'Logical:','内存使用':'Memory Usage','已用:':'Used:','总计:':'Total:','总磁盘使用':'Disk Usage','显卡':'GPU','磁盘 I/O':'Disk I/O','读取':'Read','写入':'Write','CPU / 内存 趋势':'CPU / Memory Trend','磁盘分区':'Disk Partitions','暂无数据':'No data','网络流量':'Network Traffic','发送':'Sent','接收':'Recv','Top 进程':'Top Processes','名称':'Name','未检测到':'-','使用率':'Usage','温度':'Temp','显存':'VRAM','历史趋势':'History Trend'};
+        // Version Manager
+        async function loadVersion(){
+            try{
+                const r=await fetch('/api/version');if(!r.ok)throw 0;
+                const d=await r.json();
+                document.getElementById('currentVer').textContent=d.current||'--';
+                document.getElementById('latestVer').textContent=d.latest||'--';
+                const badge=document.getElementById('updateBadge');
+                badge.classList.toggle('hidden',!d.has_update);
+                const list=document.getElementById('versionList');
+                if(!d.releases||d.releases.length===0){list.innerHTML='<div class="text-blue-500 text-xs">No releases found</div>';return;}
+                list.innerHTML=d.releases.map(r=>{
+                    const isCur=r.tag===d.current;
+                    const date=new Date(r.date).toLocaleDateString();
+                    return `<div class="card-inner p-2 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isCur?'bg-cyan-500/15 text-cyan-300':'bg-blue-500/15 text-blue-300'}">${r.tag}</span>
+                            <span class="text-[10px] text-blue-500">${date}</span>
+                        </div>
+                        ${isCur?'<span class="text-[10px] text-cyan-400 font-medium">'+(currentLang==='en'?'Installed':'已安装')+'</span>':'<button onclick="doUpdate(\''+r.tag+'\')" class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 font-medium">'+(currentLang==='en'?'Update':'更新')+'</button>'}
+                    </div>`;
+                }).join('');
+            }catch(e){document.getElementById('versionList').innerHTML='<div class="text-blue-500 text-xs">Failed to load</div>';}
+        }
+        async function doUpdate(tag){
+            const st=document.getElementById('updateStatus');
+            st.classList.remove('hidden');
+            st.textContent=(currentLang==='en'?'Updating to ':'正在更新到 ')+tag+'...';
+            st.className='mt-3 text-xs text-amber-400';
+            try{
+                const r=await fetch('/api/update?tag='+tag,{method:'POST'});
+                const d=await r.json();
+                if(d.ok){
+                    st.textContent=(currentLang==='en'?'Updated! Reconnecting...':'更新完成！正在重连...')+' '+d.msg;
+                    st.className='mt-3 text-xs text-emerald-400';
+                    let tries=0;
+                    const reconnect=setInterval(()=>{
+                        tries++;
+                        fetch('/api/version').then(()=>{clearInterval(reconnect);location.reload();}).catch(()=>{});
+                        if(tries>30){clearInterval(reconnect);st.textContent=(currentLang==='en'?'Reconnect failed, please refresh':'重连失败，请手动刷新');st.className='mt-3 text-xs text-red-400';}
+                    },1000);
+                }else{st.textContent='Error: '+(d.error||d.msg);st.className='mt-3 text-xs text-red-400';}
+            }catch(e){st.textContent=(currentLang==='en'?'Update failed':'更新失败')+': '+e;st.className='mt-3 text-xs text-red-400';}
+        }
+        loadVersion();
+
+        const i18n={'加载中...':'Loading...','运行中':'Running','连接失败':'Offline','运行时间':'Uptime','硬件信息':'Hardware Info','CPU 型号':'CPU Model','主板':'Motherboard','系统 / 内核':'System / Kernel','内存模块':'Memory Modules','硬盘':'Disk Drives','网卡':'Network Cards','CPU 使用率':'CPU Usage','物理核心:':'Physical:','逻辑线程:':'Logical:','内存使用':'Memory Usage','已用:':'Used:','总计:':'Total:','总磁盘使用':'Disk Usage','显卡':'GPU','磁盘 I/O':'Disk I/O','读取':'Read','写入':'Write','CPU / 内存 趋势':'CPU / Memory Trend','磁盘分区':'Disk Partitions','暂无数据':'No data','网络流量':'Network Traffic','发送':'Sent','接收':'Recv','Top 进程':'Top Processes','名称':'Name','未检测到':'-','使用率':'Usage','温度':'Temp','显存':'VRAM','历史趋势':'History Trend','版本管理':'Version Manager','当前版本':'Current','最新版本':'Latest','有新版本':'Update available!'};
         const i18nReverse=Object.fromEntries(Object.entries(i18n).map(([k,v])=>[v,k]));
         let currentLang='zh';
         function translatePage(lang){const map=lang==='en'?i18n:i18nReverse;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);const texts=[];let n;while(n=walker.nextNode())if(n.nodeValue.trim())texts.push(n);texts.forEach(t=>{let v=t.nodeValue;for(const[a,b]of Object.entries(map))v=v.split(a).join(b);t.nodeValue=v;});
