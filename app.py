@@ -8,6 +8,7 @@ import sys
 import json
 import math
 import platform
+import socket
 from datetime import datetime, timezone
 
 # Ensure script directory is in path (for embedded Python)
@@ -275,11 +276,37 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'Not Found')
 
 
+def get_local_ips():
+    ips = []
+    try:
+        hostname = socket.gethostname()
+        for info in socket.getaddrinfo(hostname, None):
+            ip = info[4][0]
+            if ip not in ips and not ip.startswith('127.') and not ip.startswith('169.254'):
+                ips.append(ip)
+    except Exception:
+        pass
+    if not ips:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(('8.8.8.8', 80))
+            ips.append(s.getsockname()[0])
+            s.close()
+        except Exception:
+            pass
+    return ips
+
+
 def serve(host='0.0.0.0', port=5000):
     history.init_store()
     history.start_sampler()
     server = ThreadedHTTPServer((host, port), RequestHandler)
-    print(f"Server Monitor running at http://{host}:{port}")
+    local_ips = get_local_ips()
+    print(f"Server Monitor running at:")
+    for ip in local_ips:
+        print(f"  http://{ip}:{port}")
+    if not local_ips:
+        print(f"  http://localhost:{port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
