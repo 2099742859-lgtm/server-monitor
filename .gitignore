@@ -1,0 +1,34 @@
+# Sensitive
+frpc.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Project-local Python runtime
+python/
+python-install/
+
+# frp client binaries
+frp/
+frp.zip
+frpc.log
+frpc.err
+
+# Test file
+test_server.py
+
+# History runtime data
+history.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

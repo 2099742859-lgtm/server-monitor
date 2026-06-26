@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.005) 30%, rgba(255,255,255,0.008) 60%, rgba(255,255,255,0.015) 100%);
+            backdrop-filter: blur(60px) saturate(300%) brightness(1.5) contrast(1.05);
+            -webkit-backdrop-filter: blur(60px) saturate(300%) brightness(1.5) contrast(1.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-top-color: rgba(255,255,255,0.18);
+            border-left-color: rgba(255,255,255,0.12);
+            border-bottom-color: rgba(255,255,255,0.02);
+            border-right-color: rgba(255,255,255,0.04);
+            box-shadow:
+                inset 0 3px 3px rgba(255,255,255,0.14),
+                inset 0 -2px 4px rgba(255,182,193,0.04),
+                0 4px 24px rgba(0,0,0,0.02);
+            position: relative;
+            border-radius: 16px;
+        }
+        .glass::before {
+            content: '';
+            position: absolute; inset: 0;
+            border-radius: inherit;
+            background:
+                linear-gradient(165deg, rgba(255,255,255,0.15) 0%, transparent 25%);
+            pointer-events: none;
+        }
+        .glass::after {
+            content: '';
+            position: absolute; top: 0; left: 6%; right: 6%; height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #fff5f7 0%, #ffe4ec 50%, #fff0f5 100%);
+        }
+        .pulse-dot {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .hardware-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.006) 30%, rgba(255,255,255,0.01) 60%, rgba(255,255,255,0.012) 100%);
+            backdrop-filter: blur(46px) saturate(280%) brightness(1.55) contrast(1.05);
+            -webkit-backdrop-filter: blur(46px) saturate(280%) brightness(1.55) contrast(1.05);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-top-color: rgba(255,255,255,0.1);
+            border-left-color: rgba(255,255,255,0.07);
+            border-bottom-color: rgba(255,255,255,0.015);
+            border-right-color: rgba(255,255,255,0.03);
+            box-shadow:
+                inset 0 2px 2px rgba(255,255,255,0.1),
+                inset 0 -2px 3px rgba(255,182,193,0.03),
+                0 3px 16px rgba(0,0,0,0.02);
+            position: relative;
+            border-radius: 12px;
+        }
+        .hardware-card::before {
+            content: '';
+            position: absolute; inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(165deg, rgba(255,255,255,0.1) 0%, transparent 25%);
+            pointer-events: none;
+        }
+        /* Wallpaper */
+        #wallpaper {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            z-index: -1; opacity: 0.75;
+            filter: blur(4px) brightness(1.2);
+            transition: opacity 1s;
+        }
+        /* Mobile */
+        @media (max-width: 768px) {
+            .glass { padding: 12px; border-radius: 12px; }
+            .grid-cols-1.lg\\:grid-cols-3 { gap: 12px; }
+            .grid-cols-1.lg\\:grid-cols-2 { gap: 12px; }
+            h1 { font-size: 1.1rem; }
+            .mono { font-size: 0.7rem; }
+            body { font-size: 14px; }
+        }
+        /* removed sakura */
+    </style>
+</head>
+<body class="gradient-bg text-gray-900 min-h-screen">
+    <div class="p-6 max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-400">Server Monitor</h1>
+                    <p class="text-gray-500 text-sm" id="hostname">加载中...</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <button id="langToggle" onclick="toggleLang()" class="px-3 py-2 rounded-xl glass text-sm text-gray-700 hover:bg-white/20 transition" title="Switch Language">EN</button>
+                <div class="flex items-center gap-2 px-4 py-2 rounded-xl glass">
+                    <div class="w-2 h-2 rounded-full bg-pink-500 pulse-dot" id="statusDot"></div>
+                    <span class="text-sm text-gray-700" id="statusText" data-i18n="running">运行中</span>
+                </div>
+                <div class="text-right">
+                    <div class="text-xs text-gray-500" data-i18n="uptime">运行时间</div>
+                    <div class="font-semibold mono" id="uptime">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hardware Info -->
+        <div class="glass rounded-2xl p-6 mb-6">
+            <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                </svg>
+                硬件信息
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" id="hardwareInfo">
+                <div class="hardware-card rounded-xl p-4 border border-pink-200">
+                    <div class="text-xs text-gray-500 mb-1">CPU 型号</div>
+                    <div class="text-sm font-medium text-gray-800 mono" id="cpuModel">--</div>
+                </div>
+                <div class="hardware-card rounded-xl p-4 border border-pink-200">
+                    <div class="text-xs text-gray-500 mb-1">主板</div>
+                    <div class="text-sm font-medium text-gray-800 mono" id="motherboard">--</div>
+                </div>
+                <div class="hardware-card rounded-xl p-4 border border-pink-200">
+                    <div class="text-xs text-gray-500 mb-1">BIOS</div>
+                    <div class="text-sm font-medium text-gray-800 mono" id="bios">--</div>
+                </div>
+                    <div class="hardware-card rounded-xl p-4 border border-pink-200">
+                    <div class="text-xs text-gray-500 mb-1">系统 / 内核</div>
+                    <div class="text-sm font-medium text-gray-800 mono" id="systemInfo">--</div>
+                    <div class="text-xs text-gray-500 mt-1 mono" id="platformVersion">--</div>
+                    <div class="text-xs text-gray-500 mono" id="kernelVersion">--</div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="hardware-card rounded-xl p-4 border border-pink-200">
+                    <div class="text-xs text-gray-500 mb-2">内存模块</div>
+                    <div id="memoryModules" class="space-y-1 text-sm mono"></div>
+                </div>
+                <div class="hardware-card rounded-xl p-4 border border-pink-200">
+                    <div class="text-xs text-gray-500 mb-2">硬盘</div>
+                    <div id="diskDrives" class="space-y-1 text-sm mono"></div>
+                </div>
+            </div>
+            <div class="hardware-card rounded-xl p-4 border border-pink-200 mt-4">
+                <div class="text-xs text-gray-500 mb-2">网卡</div>
+                <div id="networkCards" class="space-y-1 text-sm mono"></div>
+            </div>
+        </div>
+
+        <!-- CPU & Memory & Disk -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div class="glass rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-800">CPU 使用率</h3>
+                    <span class="text-3xl font-bold text-pink-500 mono" id="cpuPercent">0%</span>
+                </div>
+                <div class="relative h-4 bg-pink-100 rounded-full overflow-hidden mb-4">
+                    <div id="cpuBar" class="h-full bg-gradient-to-r from-pink-400 to-rose-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="text-gray-500">物理核心: <span class="text-gray-800 mono" id="cpuPhysical">--</span></div>
+                    <div class="text-gray-500">逻辑线程: <span class="text-gray-800 mono" id="cpuLogical">--</span></div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-800">内存使用</h3>
+                    <span class="text-3xl font-bold text-rose-500 mono" id="memPercent">0%</span>
+                </div>
+                <div class="relative h-4 bg-pink-100 rounded-full overflow-hidden mb-4">
+                    <div id="memBar" class="h-full bg-gradient-to-r from-rose-400 to-pink-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="text-gray-500">已用: <span class="text-gray-800 mono" id="memUsed">--</span></div>
+                    <div class="text-gray-500">总计: <span class="text-gray-800 mono" id="memTotal">--</span></div>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-800">总磁盘使用</h3>
+                    <span class="text-3xl font-bold text-pink-500 mono" id="diskPercent">0%</span>
+                </div>
+                <div class="relative h-4 bg-pink-100 rounded-full overflow-hidden mb-4">
+                    <div id="diskBar" class="h-full bg-gradient-to-r from-pink-400 to-rose-400 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="text-gray-500">已用: <span class="text-gray-800 mono" id="diskUsed">--</span></div>
+                    <div class="text-gray-500">总计: <span class="text-gray-800 mono" id="diskTotal">--</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GPU -->
+        <div class="glass rounded-2xl p-6 mb-6" id="gpuSection" style="display: none;">
+            <h3 class="font-semibold text-gray-800 mb-4">显卡</h3>
+            <div id="gpuCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            </div>
+        </div>
+
+        <!-- Disk I/O -->
+        <div class="glass rounded-2xl p-6 mb-6">
+            <h3 class="font-semibold text-gray-800 mb-4">磁盘 I/O</h3>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="p-4 rounded-xl bg-pink-50">
+                    <div class="text-xs text-gray-500 mb-1">读取</div>
+                    <div class="text-xl font-bold text-pink-500 mono" id="diskRead">--</div>
+                </div>
+                <div class="p-4 rounded-xl bg-pink-50">
+                    <div class="text-xs text-gray-500 mb-1">写入</div>
+                    <div class="text-xl font-bold text-pink-400 mono" id="diskWrite">--</div>
+                </div>
+            </div>
+            <div class="h-48">
+                <canvas id="diskChart"></canvas>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="glass rounded-2xl p-6 mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h3 class="font-semibold text-gray-800" data-i18n="历史趋势">历史趋势</h3>
+                <div class="flex items-center gap-1 text-sm" id="historyRangeBtns">
+                    <button data-range="1h" class="hist-btn px-3 py-1 rounded-lg bg-pink-100 text-pink-600 font-medium">1h</button>
+                    <button data-range="6h" class="hist-btn px-3 py-1 rounded-lg text-gray-500 hover:bg-pink-50">6h</button>
+                    <button data-range="24h" class="hist-btn px-3 py-1 rounded-lg text-gray-500 hover:bg-pink-50">24h</button>
+                    <button data-range="7d" class="hist-btn px-3 py-1 rounded-lg text-gray-500 hover:bg-pink-50">7d</button>
+                    <span class="text-xs text-gray-400 ml-2" id="historyCount"></span>
+                </div>
+            </div>
+            <div class="flex gap-4 mb-3 text-xs">
+                <label class="flex items-center gap-1 text-gray-600"><input type="checkbox" id="histCpu" checked> CPU</label>
+                <label class="flex items-center gap-1 text-gray-600"><input type="checkbox" id="histMem" checked> MEM</label>
+                <label class="flex items-center gap-1 text-gray-600"><input type="checkbox" id="histNet"> NET</label>
+                <label class="flex items-center gap-1 text-gray-600"><input type="checkbox" id="histDisk"> DISK</label>
+            </div>
+            <div class="h-80">
+                <canvas id="historyChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="glass rounded-2xl p-6">
+                <h3 class="font-semibold text-gray-800 mb-4">CPU / 内存 趋势</h3>
+                <div class="h-64">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+            <div class="glass rounded-2xl p-6">
+                <h3 class="font-semibold text-gray-800 mb-4">磁盘分区</h3>
+                <div id="diskPartitions" class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                    <div class="text-gray-500 text-sm">暂无数据</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network & Processes -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="glass rounded-2xl p-6">
+                <h3 class="font-semibold text-gray-800 mb-4">网络流量</h3>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="p-4 rounded-xl bg-pink-50">
+                        <div class="text-xs text-gray-500 mb-1">发送</div>
+                        <div class="text-xl font-bold text-pink-500 mono" id="netSent">--</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-pink-50">
+                        <div class="text-xs text-gray-500 mb-1">接收</div>
+                        <div class="text-xl font-bold text-pink-500 mono" id="netRecv">--</div>
+                    </div>
+                </div>
+                <div class="h-48">
+                    <canvas id="netChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6">
+                <h3 class="font-semibold text-gray-800 mb-4">Top 进程</h3>
+                <div class="overflow-x-auto max-h-64 overflow-y-auto pr-2">
+                    <table class="w-full text-sm">
+                        <thead class="text-gray-500 border-b border-gray-700">
+                            <tr>
+                                <th class="text-left py-2">PID</th>
+                                <th class="text-left py-2">名称</th>
+                                <th class="text-right py-2">CPU%</th>
+                                <th class="text-right py-2">内存%</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processTable" class="mono">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="wallpaper"></div>
+    <script>
+        // Wallpaper + mobile detect
+        (function() {
+            const isMobile = /Android|iPhone|iPad|iPod|Mobile|webOS/i.test(navigator.userAgent);
+            const type = isMobile ? 'wap' : 'pc';
+            fetch('https://v2.xxapi.cn/api/randomAcgPic?type=' + type)
+                .then(r => r.json())
+                .then(d => {
+                    if (d.code === 200 && d.data) {
+                        const url = typeof d.data === 'string' ? d.data : d.data.url;
+                        if (url) document.getElementById('wallpaper').style.backgroundImage = 'url(' + url + ')';
+                    }
+                }).catch(() => {});
+        })();
+    </script>
+    <script>
+        const maxPoints = 30;
+        const labels = Array(maxPoints).fill('');
+        const cpuData = Array(maxPoints).fill(0);
+        const memData = Array(maxPoints).fill(0);
+        const netSentData = Array(maxPoints).fill(0);
+        const netRecvData = Array(maxPoints).fill(0);
+        const diskReadData = Array(maxPoints).fill(0);
+        const diskWriteData = Array(maxPoints).fill(0);
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatDuration(seconds) {
+            const d = Math.floor(seconds / 86400);
+            const h = Math.floor((seconds % 86400) / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${d}天 ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
+
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        const trendChart = new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'CPU %',
+                    data: cpuData,
+                    borderColor: '#1f2937',
+                    backgroundColor: 'rgba(31, 41, 55, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }, {
+                    label: '内存 %',
+                    data: memData,
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#9ca3af' } } },
+                scales: {
+                    y: { min: 0, max: 100, grid: { color: 'rgba(255,105,180,0.08)' }, ticks: { color: '#9ca3af' } },
+                    x: { grid: { display: false }, ticks: { display: false } }
+                }
+            }
+        });
+
+        const netCtx = document.getElementById('netChart').getContext('2d');
+        const netChart = new Chart(netCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '发送 KB/s',
+                    data: netSentData,
+                    borderColor: '#1f2937',
+                    backgroundColor: 'rgba(31, 41, 55, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }, {
+                    label: '接收 KB/s',
+                    data: netRecvData,
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#9ca3af' } } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,105,180,0.08)' }, ticks: { color: '#9ca3af' } },
+                    x: { grid: { display: false }, ticks: { display: false } }
+                }
+            }
+        });
+
+        let lastNet = { sent: 0, recv: 0, time: Date.now() };
+        let lastDisk = { read: 0, write: 0, time: Date.now() };
+
+        const diskChartCtx = document.getElementById('diskChart').getContext('2d');
+        const diskChart = new Chart(diskChartCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '读取 KB/s',
+                    data: diskReadData,
+                    borderColor: '#1f2937',
+                    backgroundColor: 'rgba(31, 41, 55, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }, {
+                    label: '写入 KB/s',
+                    data: diskWriteData,
+                    borderColor: '#ec4899',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#9ca3af' } } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,105,180,0.08)' }, ticks: { color: '#9ca3af' } },
+                    x: { grid: { display: false }, ticks: { display: false } }
+                }
+            }
+        });
+
+        // ---- History chart ----
+        const historyCtx = document.getElementById('historyChart').getContext('2d');
+        const historyChart = new Chart(historyCtx, {
+            type: 'line',
+            data: { labels: [], datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { color: '#9ca3af', boxWidth: 12 } },
+                    tooltip: {
+                        callbacks: {
+                            title: function(items) {
+                                const d = new Date(items[0].parsed.x);
+                                return d.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,105,180,0.08)' }, ticks: { color: '#9ca3af' } },
+                    x: { grid: { display: false }, ticks: { color: '#9ca3af', maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } }
+                }
+            }
+        });
+
+        let currentRange = '1h';
+
+        function fmtHistTime(ts, range) {
+            const d = new Date(ts);
+            if (range === '7d' || range === '24h')
+                return d.toLocaleDateString([], {month:'short',day:'numeric'}) + ' ' + d.getHours() + ':00';
+            return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+        }
+
+        async function loadHistory(range) {
+            currentRange = range;
+            document.querySelectorAll('.hist-btn').forEach(b => {
+                const active = b.dataset.range === range;
+                b.className = 'hist-btn px-3 py-1 rounded-lg ' + (active ? 'bg-pink-100 text-pink-600 font-medium' : 'text-gray-500 hover:bg-pink-50');
+            });
+            try {
+                const res = await fetch('/api/history?range=' + range);
+                if (!res.ok) throw new Error('history api error');
+                const data = await res.json();
+                const pts = data.points || [];
+                document.getElementById('historyCount').textContent = pts.length + ' pts';
+
+                const labels = pts.map(p => fmtHistTime(p.ts, range));
+                const showCpu = document.getElementById('histCpu').checked;
+                const showMem = document.getElementById('histMem').checked;
+                const showNet = document.getElementById('histNet').checked;
+                const showDisk = document.getElementById('histDisk').checked;
+
+                const datasets = [];
+                if (showCpu) datasets.push({ label: 'CPU %', data: pts.map(p=>p.cpu), borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.08)', fill:true, tension:0.3, pointRadius:0, borderWidth:1.5, yAxisID:'y' });
+                if (showMem) datasets.push({ label: 'MEM %', data: pts.map(p=>p.mem_percent), borderColor:'#ec4899', backgroundColor:'rgba(236,72,153,0.08)', fill:true, tension:0.3, pointRadius:0, borderWidth:1.5, yAxisID:'y' });
+                if (showNet) datasets.push({ label: 'NET KB/s', data: pts.map(p=>(p.net_sent_rate||0)+(p.net_recv_rate||0)), borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.06)', fill:false, tension:0.3, pointRadius:0, borderWidth:1.5, yAxisID:'y1' });
+                if (showDisk) datasets.push({ label: 'DISK KB/s', data: pts.map(p=>(p.disk_read_rate||0)+(p.disk_write_rate||0)), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.06)', fill:false, tension:0.3, pointRadius:0, borderWidth:1.5, yAxisID:'y1' });
+
+                historyChart.data.labels = labels;
+                historyChart.data.datasets = datasets;
+                historyChart.options.scales.y1 = datasets.some(d=>d.yAxisID==='y1') ? { beginAtZero:true, position:'right', grid:{display:false}, ticks:{color:'#9ca3af'} } : { display:false };
+                historyChart.update('none');
+            } catch (e) {
+                console.error('load history failed:', e);
+            }
+        }
+
+        document.querySelectorAll('.hist-btn').forEach(btn => {
+            btn.addEventListener('click', () => loadHistory(btn.dataset.range));
+        });
+        ['histCpu','histMem','histNet','histDisk'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => loadHistory(currentRange));
+        });
+        loadHistory('1h');
+        setInterval(() => loadHistory(currentRange), 30000);
+
+        function updateHardware(data) {
+            document.getElementById('cpuModel').textContent = data.cpu.model || '--';
+            document.getElementById('motherboard').textContent = data.system.motherboard || '--';
+            document.getElementById('bios').textContent = data.system.bios || '--';
+            document.getElementById('systemInfo').textContent = `${data.system.hostname} · ${data.system.platform}`;
+            const pv = document.getElementById('platformVersion');
+            if (pv) pv.textContent = data.system.platform_version || '';
+            const kv = document.getElementById('kernelVersion');
+            if (kv) kv.textContent = '内核 ' + (data.system.kernel || '');
+
+            const nicHtml = (data.network_cards || []).map(n => `
+                <div class="flex justify-between text-gray-700 py-1 border-b border-gray-700/30 last:border-0">
+                    <span class="truncate mr-2">${n.name}</span>
+                    <span class="text-pink-500 shrink-0 text-xs">${n.mac || ''} ${n.ips && n.ips.length ? n.ips[0] : ''}</span>
+                </div>
+            `).join('');
+            const nicEl = document.getElementById('networkCards');
+            if (nicEl) nicEl.innerHTML = nicHtml || '<span class="text-gray-500">未检测到</span>';
+
+            const memHtml = (data.memory.modules || []).map(m => `
+                <div class="flex justify-between text-gray-700 py-1 border-b border-gray-700/30 last:border-0">
+                    <span>${m.manufacturer} ${m.part_number}</span>
+                    <span class="text-pink-500">${m.size_text} @ ${m.speed}</span>
+                </div>
+            `).join('');
+            document.getElementById('memoryModules').innerHTML = memHtml || '<span class="text-gray-500">未检测到</span>';
+
+            const diskHtml = (data.disk.drives || []).map(d => `
+                <div class="flex justify-between text-gray-700 py-1 border-b border-gray-700/30 last:border-0">
+                    <span class="truncate mr-2" title="${d.model}">${d.model}</span>
+                    <span class="text-pink-500 shrink-0">${d.size_text} · ${d.interface}</span>
+                </div>
+            `).join('');
+            document.getElementById('diskDrives').innerHTML = diskHtml || '<span class="text-gray-500">未检测到</span>';
+        }
+
+        function updateUI(data) {
+            document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-pink-500 pulse-dot';
+            document.getElementById('statusText').textContent = '运行中';
+
+            document.getElementById('hostname').textContent = `${data.system.hostname} · ${data.system.platform}`;
+            document.getElementById('uptime').textContent = formatDuration(data.system.uptime);
+
+            document.getElementById('cpuPercent').textContent = data.cpu.percent.toFixed(1) + '%';
+            document.getElementById('cpuBar').style.width = data.cpu.percent + '%';
+            document.getElementById('cpuPhysical').textContent = data.cpu.physical_cores;
+            document.getElementById('cpuLogical').textContent = data.cpu.logical_cores;
+
+            document.getElementById('memPercent').textContent = data.memory.percent.toFixed(1) + '%';
+            document.getElementById('memBar').style.width = data.memory.percent + '%';
+            document.getElementById('memUsed').textContent = formatBytes(data.memory.used);
+            document.getElementById('memTotal').textContent = formatBytes(data.memory.total);
+
+            document.getElementById('diskPercent').textContent = data.disk.percent.toFixed(1) + '%';
+            document.getElementById('diskBar').style.width = data.disk.percent + '%';
+            document.getElementById('diskUsed').textContent = formatBytes(data.disk.used);
+            document.getElementById('diskTotal').textContent = formatBytes(data.disk.total);
+
+            const diskHtml = data.disk.partitions.map(p => {
+                const label = p.mountpoint && p.mountpoint !== 'None' ? p.mountpoint : p.device;
+                const percent = typeof p.percent === 'number' ? p.percent : 0;
+                return `
+                <div class="p-3 rounded-xl bg-pink-50">
+                    <div class="flex justify-between text-sm mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-700 font-medium">${label}</span>
+                            <span class="text-xs text-gray-500 mono">${p.fstype || ''}</span>
+                        </div>
+                        <span class="text-gray-500 mono">${percent.toFixed(1)}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-pink-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-pink-400 to-rose-400 transition-all duration-500" style="width: ${percent}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1 mono">${formatBytes(p.used)} / ${formatBytes(p.total)}</div>
+                </div>
+            `}).join('');
+            document.getElementById('diskPartitions').innerHTML = diskHtml || '<div class="text-gray-500 text-sm">暂无数据</div>';
+
+            const now = Date.now();
+            const sentRate = data.network.sent_rate || 0;
+            const recvRate = data.network.recv_rate || 0;
+            lastNet = { sent: data.network.bytes_sent, recv: data.network.bytes_recv, time: now };
+
+            document.getElementById('netSent').textContent = sentRate.toFixed(1) + ' KB/s';
+            document.getElementById('netRecv').textContent = recvRate.toFixed(1) + ' KB/s';
+
+            const readRate = data.disk.io.read_rate || 0;
+            const writeRate = data.disk.io.write_rate || 0;
+            lastDisk = { read: data.disk.io.read_bytes, write: data.disk.io.write_bytes, time: now };
+
+            document.getElementById('diskRead').textContent = readRate.toFixed(1) + ' KB/s';
+            document.getElementById('diskWrite').textContent = writeRate.toFixed(1) + ' KB/s';
+
+            // GPU
+            const gpuSection = document.getElementById('gpuSection');
+            if (data.gpu && data.gpu.gpus && data.gpu.gpus.length > 0) {
+                gpuSection.style.display = 'block';
+                document.getElementById('gpuCards').innerHTML = data.gpu.gpus.map(g => {
+                    const memPercent = g.memory_total > 0 ? (g.memory_used / g.memory_total * 100).toFixed(1) : 0;
+                    return `
+                    <div class="p-4 rounded-xl bg-pink-50">
+                        <div class="text-sm font-medium text-gray-800 mb-2 truncate" title="${g.name}">${g.name}</div>
+                        <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                            <div class="text-gray-500">使用率</div>
+                            <div class="text-right text-pink-500 mono">${g.usage.toFixed ? g.usage.toFixed(1) : g.usage}%</div>
+                            <div class="text-gray-500">温度</div>
+                            <div class="text-right text-red-400 mono">${g.temperature ? g.temperature.toFixed(1) : '--'}°C</div>
+                            <div class="text-gray-500">显存</div>
+                            <div class="text-right text-rose-500 mono">${formatBytes(g.memory_used || 0)} / ${formatBytes(g.memory_total || 0)}</div>
+                        </div>
+                        <div class="w-full h-2 bg-pink-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-yellow-400 to-red-500 transition-all duration-500" style="width: ${g.usage}%"></div>
+                        </div>
+                    </div>
+                `}).join('');
+            } else if (gpuSection) {
+                gpuSection.style.display = 'none';
+            }
+
+            cpuData.push(data.cpu.percent);
+            cpuData.shift();
+            memData.push(data.memory.percent);
+            memData.shift();
+            netSentData.push(sentRate);
+            netSentData.shift();
+            netRecvData.push(recvRate);
+            netRecvData.shift();
+            diskReadData.push(readRate);
+            diskReadData.shift();
+            diskWriteData.push(writeRate);
+            diskWriteData.shift();
+
+            trendChart.update('none');
+            netChart.update('none');
+            diskChart.update('none');
+
+            const procHtml = data.processes.map(p => `
+                <tr class="border-b border-gray-800 hover:bg-gray-800/30">
+                    <td class="py-2 text-gray-500">${p.pid}</td>
+                    <td class="py-2 text-gray-800 truncate max-w-[120px]">${p.name}</td>
+                    <td class="py-2 text-right text-pink-500">${(p.cpu_percent || 0).toFixed(1)}%</td>
+                    <td class="py-2 text-right text-rose-500">${(p.memory_percent || 0).toFixed(1)}%</td>
+                </tr>
+            `).join('');
+            document.getElementById('processTable').innerHTML = procHtml;
+
+            updateHardware(data);
+        }
+
+        function generateMockData() {
+            // mock data removed
+            return {};
+        }
+
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/metrics');
+                if (!res.ok) throw new Error('API error');
+                const data = await res.json();
+                updateUI(data);
+            } catch (e) {
+                document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-red-500 pulse-dot';
+                document.getElementById('statusText').textContent = '连接失败';
+                console.error('fetch data failed:', e);
+            }
+        }
+
+        fetchData();
+        setInterval(fetchData, 1000);
+
+        // i18n
+        const i18n = {
+            '加载中...': 'Loading...',
+            '运行中': 'Running',
+            '演示模式': 'Demo Mode',
+            '连接失败': 'Connection Failed',
+            '运行时间': 'Uptime',
+            '硬件信息': 'Hardware Info',
+            'CPU 型号': 'CPU Model',
+            '主板': 'Motherboard',
+            '系统 / 内核': 'System / Kernel',
+            '内存模块': 'Memory Modules',
+            '硬盘': 'Disk Drives',
+            '网卡': 'Network Cards',
+            'CPU 使用率': 'CPU Usage',
+            '物理核心:': 'Physical Cores:',
+            '逻辑线程:': 'Logical Threads:',
+            '内存使用': 'Memory Usage',
+            '已用:': 'Used:',
+            '总计:': 'Total:',
+            '总磁盘使用': 'Disk Usage',
+            '显卡': 'GPU',
+            '磁盘 I/O': 'Disk I/O',
+            '读取': 'Read',
+            '写入': 'Write',
+            'CPU / 内存 趋势': 'CPU / Memory Trend',
+            '磁盘分区': 'Disk Partitions',
+            '暂无数据': 'No data',
+            '网络流量': 'Network Traffic',
+            '发送': 'Sent',
+            '接收': 'Received',
+            'Top 进程': 'Top Processes',
+            '名称': 'Name',
+            '未检测到': 'Not detected',
+            '使用率': 'Usage',
+            '温度': 'Temp',
+            '显存': 'VRAM',
+            '历史趋势': 'History Trend',
+        };
+        const i18nReverse = Object.fromEntries(Object.entries(i18n).map(([k,v]) => [v,k]));
+        let currentLang = 'zh';
+
+        function translatePage(lang) {
+            const map = lang === 'en' ? i18n : i18nReverse;
+            const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+            const texts = [];
+            let node;
+            while (node = walker.nextNode()) {
+                if (node.nodeValue.trim()) texts.push(node);
+            }
+            texts.forEach(n => {
+                let val = n.nodeValue;
+                for (const [zh, en] of Object.entries(map)) {
+                    val = val.split(zh).join(en);
+                }
+                n.nodeValue = val;
+            });
+            // chart labels
+            if (typeof trendChart !== 'undefined') {
+                trendChart.data.datasets[0].label = lang === 'en' ? 'CPU %' : 'CPU %';
+                trendChart.data.datasets[1].label = lang === 'en' ? 'Memory %' : '内存 %';
+                trendChart.options.plugins.legend.labels.color = '#9ca3af';
+                trendChart.update('none');
+            }
+            if (typeof netChart !== 'undefined') {
+                netChart.data.datasets[0].label = lang === 'en' ? 'Send KB/s' : '发送 KB/s';
+                netChart.data.datasets[1].label = lang === 'en' ? 'Recv KB/s' : '接收 KB/s';
+                netChart.update('none');
+            }
+            if (typeof diskChart !== 'undefined') {
+                diskChart.data.datasets[0].label = lang === 'en' ? 'Read KB/s' : '读取 KB/s';
+                diskChart.data.datasets[1].label = lang === 'en' ? 'Write KB/s' : '写入 KB/s';
+                diskChart.update('none');
+            }
+        }
+
+        function toggleLang() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            document.getElementById('langToggle').textContent = currentLang === 'zh' ? 'EN' : '中文';
+            translatePage(currentLang);
+        }
+    </script>
+</body>
+</html>
