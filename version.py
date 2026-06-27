@@ -18,30 +18,38 @@ _MIRRORS = {
 _MIRROR_ORDER = ['github', 'ghproxy', 'moeyy', 'kkgithub']
 
 
-def _fetch(url, timeout=15):
+def _fetch(url, timeout=15, allow_proxy=True):
     req = urllib.request.Request(url, headers={
         'User-Agent': 'server-monitor',
         'Accept': 'application/vnd.github.v3+json',
     })
-    proxies = [None]
+    # Try direct first
+    try:
+        opener = urllib.request.build_opener()
+        return opener.open(req, timeout=timeout)
+    except Exception:
+        pass
+    if not allow_proxy:
+        raise Exception(f"Cannot reach {url}")
+    # Try environment proxies
     for var in ('HTTPS_PROXY', 'HTTP_PROXY', 'https_proxy', 'http_proxy'):
         v = os.environ.get(var)
-        if v and v not in proxies:
-            proxies.append(v)
-    proxies.extend(['http://127.0.0.1:7897', 'http://127.0.0.1:1080'])
-    last_err = None
-    for p in proxies:
-        try:
-            if p:
-                handler = urllib.request.ProxyHandler({'http': p, 'https': p})
+        if v:
+            try:
+                handler = urllib.request.ProxyHandler({'http': v, 'https': v})
                 opener = urllib.request.build_opener(handler)
-            else:
-                opener = urllib.request.build_opener()
+                return opener.open(req, timeout=timeout)
+            except Exception:
+                continue
+    # Try common local proxies (dev machine only)
+    for p in ['http://127.0.0.1:7897', 'http://127.0.0.1:1080']:
+        try:
+            handler = urllib.request.ProxyHandler({'http': p, 'https': p})
+            opener = urllib.request.build_opener(handler)
             return opener.open(req, timeout=timeout)
-        except Exception as e:
-            last_err = e
+        except Exception:
             continue
-    raise last_err
+    raise Exception(f"Cannot reach {url}")
 
 
 def get_releases():

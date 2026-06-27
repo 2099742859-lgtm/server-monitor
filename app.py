@@ -239,6 +239,31 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(b'index.html not found')
 
+        elif path.startswith('/static/'):
+            from urllib.parse import unquote
+            file_path = os.path.join(script_dir, unquote(path).lstrip('/').replace('/', os.sep))
+            if os.path.isfile(file_path):
+                ext = os.path.splitext(file_path)[1].lower()
+                mime = {
+                    '.ttf': 'font/ttf', '.woff': 'font/woff', '.woff2': 'font/woff2',
+                    '.css': 'text/css', '.js': 'application/javascript',
+                    '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml',
+                }.get(ext, 'application/octet-stream')
+                try:
+                    with open(file_path, 'rb') as f:
+                        content = f.read()
+                    self.send_response(200)
+                    self.send_header('Content-Type', mime)
+                    self._send_cors_headers()
+                    self.end_headers()
+                    self.wfile.write(content)
+                except Exception:
+                    self.send_response(500)
+                    self.end_headers()
+            else:
+                self.send_response(404)
+                self.end_headers()
+
         elif path == '/api/metrics':
             try:
                 data = get_metrics()
