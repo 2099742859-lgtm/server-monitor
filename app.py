@@ -311,7 +311,8 @@ class RequestHandler(BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps({'error': 'Missing tag'}).encode())
                     return
                 script_dir = os.path.dirname(os.path.abspath(__file__))
-                ok, msg = version.perform_update(tag, script_dir)
+                mirror = qs.get('mirror', ['github'])[0]
+                ok, msg = version.perform_update(tag, script_dir, mirror)
                 body = json.dumps({'ok': ok, 'msg': msg}).encode('utf-8')
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')

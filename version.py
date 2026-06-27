@@ -4,8 +4,15 @@ import os
 import tarfile
 import urllib.request
 
-VERSION = "v1.1"
+VERSION = "v1.1.1"
 REPO = "2099742859-lgtm/server-monitor"
+
+_MIRRORS = {
+    'github': 'https://github.com/{repo}/archive/refs/tags/{tag}.tar.gz',
+    'ghproxy': 'https://ghproxy.com/https://github.com/{repo}/archive/refs/tags/{tag}.tar.gz',
+    'moeyy': 'https://github.moeyy.xyz/https://github.com/{repo}/archive/refs/tags/{tag}.tar.gz',
+    'kkgithub': 'https://kkgithub.com/{repo}/archive/refs/tags/{tag}.tar.gz',
+}
 
 
 def _fetch(url, timeout=15):
@@ -59,8 +66,9 @@ def check_updates():
     }
 
 
-def perform_update(tag, script_dir):
-    url = f"https://github.com/{REPO}/archive/refs/tags/{tag}.tar.gz"
+def perform_update(tag, script_dir, mirror='github'):
+    template = _MIRRORS.get(mirror, _MIRRORS['github'])
+    url = template.format(repo=REPO, tag=tag)
     resp = _fetch(url, timeout=120)
     data = resp.read()
 
