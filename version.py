@@ -81,9 +81,26 @@ def _backup(script_dir):
 def _restore(backup_dir, script_dir):
     if not os.path.exists(backup_dir):
         return False
-    shutil.rmtree(script_dir, ignore_errors=True)
-    shutil.copytree(backup_dir, script_dir, dirs_exist_ok=False,
-                    ignore=shutil.ignore_patterns('.backup'))
+    # Don't rmtree the whole dir - just remove .py files and static, then copy back
+    for item in os.listdir(script_dir):
+        full = os.path.join(script_dir, item)
+        if item in ('.venv', 'history.json', '.backup'):
+            continue
+        if os.path.isdir(full):
+            shutil.rmtree(full, ignore_errors=True)
+        else:
+            try:
+                os.remove(full)
+            except Exception:
+                pass
+    # Copy backup back
+    for item in os.listdir(backup_dir):
+        src = os.path.join(backup_dir, item)
+        dst = os.path.join(script_dir, item)
+        if os.path.isdir(src):
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+        else:
+            shutil.copy2(src, dst)
     return True
 
 
