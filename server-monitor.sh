@@ -5,9 +5,9 @@
 set -e
 
 if [ ! -f "$0" ]; then
-    log "ERROR: Cannot run via pipe. Download first:"
-    log "  curl -fsSL -o server-monitor.sh https://github.com/2099742859-lgtm/server-monitor/releases/download/v1.1/server-monitor.sh"
-    log "  bash server-monitor.sh"
+    echo "[server-monitor] ERROR: Cannot run via pipe. Download first:"
+    echo "  curl -fsSL -o server-monitor.sh https://github.com/2099742859-lgtm/server-monitor/releases/download/v1.1/server-monitor.sh"
+    echo "  bash server-monitor.sh"
     exit 1
 fi
 
@@ -51,7 +51,69 @@ uv venv --clear
 log "Installing dependencies..."
 uv pip install -r requirements.txt
 
-log "Starting server at http://0.0.0.0:5000"
+# Setup auto-start
+SERVICE_NAME="server-monitor"
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+if command -v systemctl >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
+    log "Setting up systemd service..."
+    cat > "$SERVICE_FILE" <<EOF
+[Unit]
+Description=Server Monitor
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=${DEST_DIR}
+ExecStart=${DEST_DIR}/.venv/bin/python app.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable "$SERVICE_NAME"
+    systemctl restart "$SERVICE_NAME"
+    log "Auto-start enabled (systemd). Service: $SERVICE_NAME"
+    log "Manage: systemctl {status|stop|start|disable} $SERVICE_NAME"
+    log "Server starting at http://0.0.0.0:5000"
+    exit 0
+elif [ -d "/etc/init.d" ]; then
+    log "Setting up init.d service..."
+    cat > "/etc/init.d/${SERVICE_NAME}" <<EOF
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          $SERVICE_NAME
+# Required-Start:    \$network
+# Required-Stop:     \$network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+### END INIT INFO
+DAEMON="${DEST_DIR}/.venv/bin/python"
+DAEMON_ARGS="app.py"
+DIR="${DEST_DIR}"
+case "\$1" in
+    start) cd \$DIR && \$DAEMON \$DAEMON_ARGS & ;;
+    stop)  pkill -f "python app.py" 2>/dev/null || true ;;
+    restart) \$0 stop; sleep 1; \$0 start ;;
+    *) echo "Usage: \$0 {start|stop|restart}"; exit 1 ;;
+esac
+exit 0
+EOF
+    chmod +x "/etc/init.d/${SERVICE_NAME}"
+    if command -v update-rc.d >/dev/null 2>&1; then
+        update-rc.d "$SERVICE_NAME" defaults
+    elif command -v chkconfig >/dev/null 2>&1; then
+        chkconfig --add "$SERVICE_NAME"
+    fi
+    log "Auto-start enabled (init.d). Service: $SERVICE_NAME"
+    "/etc/init.d/${SERVICE_NAME}" start
+    log "Server starting at http://0.0.0.0:5000"
+    exit 0
+fi
+
+log "No init system found. Starting in foreground..."
+log "Server starting at http://0.0.0.0:5000"
 exec ./.venv/bin/python app.py
 
 exit 0
