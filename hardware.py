@@ -258,11 +258,11 @@ def get_network_cards():
         stats = _psutil.net_if_stats()
         for name, addr_list in addrs.items():
             # Skip loopback and virtual interfaces
-            if 'loopback' in name.lower() or name.lower() == 'lo':
+            lname = name.lower()
+            if lname == 'lo' or lname.startswith('lo'):
                 continue
-            # Skip common virtual/tunnel adapters
-            skip_prefixes = ('veth', 'docker', 'br-', 'tun', 'tap', 'wg', 'ppp')
-            if any(name.startswith(prefix) for prefix in skip_prefixes):
+            skip_prefixes = ('veth', 'docker', 'br-', 'br', 'tun', 'tap', 'wg', 'ppp', 'virbr', 'vnet', 'macvtap')
+            if any(lname.startswith(prefix) for prefix in skip_prefixes):
                 continue
 
             mac = ''

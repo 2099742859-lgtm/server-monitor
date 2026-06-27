@@ -44,8 +44,11 @@ def get_gpus():
                     for line in lines[1:]:
                         parts = [p.strip() for p in line.split(',')]
                         if len(parts) >= 2 and parts[1]:
+                            name = parts[1]
+                            if _is_virtual_gpu(name):
+                                continue
                             gpus.append({
-                                'name': parts[1],
+                                'name': name,
                                 'usage': 0.0,
                                 'temperature': 0.0,
                                 'memory_used': 0.0,
@@ -57,7 +60,7 @@ def get_gpus():
             if output:
                 for line in output.splitlines():
                     name = line.split(':')[-1].strip()
-                    if name:
+                    if name and not _is_virtual_gpu(name):
                         gpus.append({
                             'name': name,
                             'usage': 0.0,
@@ -70,3 +73,14 @@ def get_gpus():
         pass
 
     return gpus
+
+
+_VIRTUAL_GPU_KEYWORDS = (
+    'cirrus', 'qxl', 'virtio', 'vmware', 'vga', 'bochs',
+    'microsoft basic render', 'remote desktop', 'dummy',
+)
+
+
+def _is_virtual_gpu(name):
+    lower = name.lower()
+    return any(kw in lower for kw in _VIRTUAL_GPU_KEYWORDS)

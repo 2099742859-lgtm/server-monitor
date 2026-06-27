@@ -85,7 +85,7 @@ def _sample_once(prev):
     total = used = 0
     seen_devs = set()
     for part in psutil.disk_partitions(all=True):
-        if part.fstype in ('', 'tmpfs', 'devtmpfs', 'proc', 'sysfs', 'squashfs', 'overlay', 'cgroup', 'cgroup2', 'mqueue', 'hugetlbfs', 'debugfs', 'tracefs', 'fusectl', 'configfs', 'securityfs', 'pstore', 'bpf', 'autofs', 'ramfs', 'devpts', 'none'):
+        if part.fstype in ('', 'tmpfs', 'devtmpfs', 'proc', 'sysfs', 'squashfs', 'overlay', 'cgroup', 'cgroup2', 'mqueue', 'hugetlbfs', 'debugfs', 'tracefs', 'fusectl', 'configfs', 'securityfs', 'pstore', 'bpf', 'autofs', 'ramfs', 'devpts', 'none', 'binfmt_misc', 'nsfs', 'fuse.gvfsd-fuse', 'fuse.snapfuse'):
             continue
         if 'cdrom' in part.opts or part.fstype == 'iso9660':
             continue
