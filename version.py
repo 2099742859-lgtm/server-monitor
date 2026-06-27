@@ -4,7 +4,7 @@ import os
 import tarfile
 import urllib.request
 
-VERSION = "v1"
+VERSION = "v1.1"
 REPO = "2099742859-lgtm/server-monitor"
 
 

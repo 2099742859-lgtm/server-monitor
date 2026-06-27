@@ -102,11 +102,13 @@ def get_metrics():
 
     # Aggregate all readable disk partitions
     partitions = []
+    seen_devices = set()
     for part in psutil.disk_partitions(all=True):
-        # Skip pseudo filesystems on Linux/macOS
-        if part.fstype in ('', 'tmpfs', 'devtmpfs', 'proc', 'sysfs', 'squashfs', 'overlay'):
+        if part.fstype in ('', 'tmpfs', 'devtmpfs', 'proc', 'sysfs', 'squashfs', 'overlay', 'cgroup', 'cgroup2', 'mqueue', 'hugetlbfs', 'debugfs', 'tracefs', 'fusectl', 'configfs', 'securityfs', 'pstore', 'bpf', 'autofs', 'ramfs', 'devpts', 'none'):
             continue
         if 'cdrom' in part.opts or part.fstype == 'iso9660':
+            continue
+        if part.device in seen_devices:
             continue
         try:
             usage = psutil.disk_usage(part.mountpoint)
@@ -119,6 +121,7 @@ def get_metrics():
                 'free': usage.free,
                 'percent': usage.percent
             })
+            seen_devices.add(part.device)
         except Exception:
             pass
 

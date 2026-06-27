@@ -83,15 +83,19 @@ def _sample_once(prev):
             nr = max(0.0, (net.bytes_recv - pn.bytes_recv) / dt / 1024)
 
     total = used = 0
+    seen_devs = set()
     for part in psutil.disk_partitions(all=True):
-        if part.fstype in ('', 'tmpfs', 'devtmpfs', 'proc', 'sysfs', 'squashfs', 'overlay'):
+        if part.fstype in ('', 'tmpfs', 'devtmpfs', 'proc', 'sysfs', 'squashfs', 'overlay', 'cgroup', 'cgroup2', 'mqueue', 'hugetlbfs', 'debugfs', 'tracefs', 'fusectl', 'configfs', 'securityfs', 'pstore', 'bpf', 'autofs', 'ramfs', 'devpts', 'none'):
             continue
         if 'cdrom' in part.opts or part.fstype == 'iso9660':
+            continue
+        if part.device in seen_devs:
             continue
         try:
             u = psutil.disk_usage(part.mountpoint)
             total += u.total
             used += u.used
+            seen_devs.add(part.device)
         except Exception:
             pass
     disk_percent = round(used / total * 100, 1) if total > 0 else 0.0
