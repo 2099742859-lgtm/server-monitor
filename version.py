@@ -18,38 +18,30 @@ _MIRRORS = {
 _MIRROR_ORDER = ['github', 'ghproxy', 'moeyy', 'kkgithub']
 
 
-def _fetch(url, timeout=15, allow_proxy=True):
+def _fetch(url, timeout=15):
     req = urllib.request.Request(url, headers={
         'User-Agent': 'server-monitor',
         'Accept': 'application/vnd.github.v3+json',
     })
-    # Try direct first
-    try:
-        opener = urllib.request.build_opener()
-        return opener.open(req, timeout=timeout)
-    except Exception:
-        pass
-    if not allow_proxy:
-        raise Exception(f"Cannot reach {url}")
-    # Try environment proxies
+    proxies = [None]
     for var in ('HTTPS_PROXY', 'HTTP_PROXY', 'https_proxy', 'http_proxy'):
         v = os.environ.get(var)
-        if v:
-            try:
-                handler = urllib.request.ProxyHandler({'http': v, 'https': v})
-                opener = urllib.request.build_opener(handler)
-                return opener.open(req, timeout=timeout)
-            except Exception:
-                continue
-    # Try common local proxies (dev machine only)
-    for p in ['http://127.0.0.1:7897', 'http://127.0.0.1:1080']:
+        if v and v not in proxies:
+            proxies.append(v)
+    proxies.extend(['http://127.0.0.1:7897', 'http://127.0.0.1:1080'])
+    last_err = None
+    for p in proxies:
         try:
-            handler = urllib.request.ProxyHandler({'http': p, 'https': p})
-            opener = urllib.request.build_opener(handler)
+            if p:
+                handler = urllib.request.ProxyHandler({'http': p, 'https': p})
+                opener = urllib.request.build_opener(handler)
+            else:
+                opener = urllib.request.build_opener()
             return opener.open(req, timeout=timeout)
-        except Exception:
+        except Exception as e:
+            last_err = e
             continue
-    raise Exception(f"Cannot reach {url}")
+    raise last_err
 
 
 def get_releases():
@@ -81,8 +73,8 @@ def _backup(script_dir):
     backup_dir = script_dir + '.backup'
     if os.path.exists(backup_dir):
         shutil.rmtree(backup_dir)
-    shutil.copytree(script_dir, backup_dir, dirs_exist_ok=False,
-                    ignore=shutil.ignore_patterns('.venv', '__pycache__', 'history.json', '.git', '.backup'))
+    shutil.copytree(script_dir, backup_dir, dirs_existorder=False,
+                    ignore=shutil.ignore_patterns('.venv', '__pycache__', 'history.json', '.git'))
     return backup_dir
 
 
@@ -90,7 +82,7 @@ def _restore(backup_dir, script_dir):
     if not os.path.exists(backup_dir):
         return False
     shutil.rmtree(script_dir, ignore_errors=True)
-    shutil.copytree(backup_dir, script_dir, dirs_exist_ok=False,
+    shutil.copytree(backup_dir, script_dir, dirs_existorder=False,
                     ignore=shutil.ignore_patterns('.backup'))
     return True
 
