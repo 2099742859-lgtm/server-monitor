@@ -53,6 +53,10 @@
         .pulse-dot { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         .divider { border-bottom: 1px solid rgba(96,165,250,0.06); }
+        .release-body { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease; }
+        .release-body.open { max-height: 500px; opacity: 1; margin-top: 0.5rem; }
+        #versionOverlay { transition: opacity 0.25s ease; }
+        #versionOverlay .card { transition: transform 0.3s cubic-bezier(0.4,0,0.2,1); }
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.15); border-radius: 2px; }
@@ -79,9 +83,13 @@
                     <p class="text-blue-500 text-xs" id="hostname">Loading...</p>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <button id="langToggle" onclick="toggleLang()" class="px-3 py-1.5 rounded-lg card text-xs text-blue-500 hover:text-blue-500 transition">EN</button>
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg card">
+            <div class="flex items-center gap-2 flex-wrap justify-end">
+                <button id="langToggle" onclick="toggleLang()" class="px-2.5 py-1.5 rounded-lg card text-xs text-blue-500 hover:text-blue-500 transition">EN</button>
+                <button onclick="openVersion()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg card text-xs text-blue-500 hover:text-blue-400 transition" title="Version">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span data-i18n="版本">Version</span>
+                </button>
+                <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg card">
                     <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot" id="statusDot"></div>
                     <span class="text-xs text-blue-500" id="statusText">Running</span>
                 </div>
@@ -263,23 +271,31 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Version Manager -->
-        <div class="card p-4 md:p-5 mb-4">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <h3 class="text-sm font-semibold text-blue-500" data-i18n="版本管理">Version Manager</h3>
-                <div class="flex items-center gap-2">
+    <!-- Version Manager Overlay -->
+    <div id="versionOverlay" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeVersion()"></div>
+        <div class="absolute right-0 top-0 bottom-0 w-full max-w-md card border-l border-white/10 overflow-y-auto" style="background:rgba(0,0,0,0.75)">
+            <div class="p-5">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-base font-bold text-blue-500" data-i18n="版本管理">Version Manager</h2>
+                    <button onclick="closeVersion()" class="w-8 h-8 rounded-lg card-inner flex items-center justify-center text-blue-500 hover:text-blue-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div class="flex items-center gap-2 mb-4 flex-wrap">
                     <span class="text-[10px] text-blue-500" data-i18n="当前版本">Current</span>
                     <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300" id="currentVer">--</span>
                     <span class="text-[10px] text-blue-500" data-i18n="最新版本">Latest</span>
                     <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-300" id="latestVer">--</span>
-                    <span class="text-[10px] hidden text-amber-400 font-medium" id="updateBadge" data-i18n="有新版本">Update available!</span>
+                    <span class="text-[10px] hidden text-amber-400 font-medium px-2 py-0.5 rounded bg-amber-500/10" id="updateBadge" data-i18n="有新版本">Update available!</span>
                 </div>
+                <div id="versionList" class="space-y-1.5">
+                    <div class="text-blue-500 text-xs" data-i18n="加载中...">Loading...</div>
+                </div>
+                <div id="updateStatus" class="mt-4 text-xs text-blue-500 hidden"></div>
             </div>
-            <div id="versionList" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                <div class="text-blue-500 text-xs" data-i18n="加载中...">Loading...</div>
-            </div>
-            <div id="updateStatus" class="mt-3 text-xs text-blue-500 hidden"></div>
         </div>
     </div>
 
@@ -428,15 +444,20 @@
                 badge.classList.toggle('hidden',!d.has_update);
                 const list=document.getElementById('versionList');
                 if(!d.releases||d.releases.length===0){list.innerHTML='<div class="text-blue-500 text-xs">No releases found</div>';return;}
-                list.innerHTML=d.releases.map(r=>{
+                list.innerHTML=d.releases.map((r,i)=>{
                     const isCur=r.tag===d.current;
                     const date=new Date(r.date).toLocaleDateString();
-                    return `<div class="card-inner p-2 flex items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isCur?'bg-cyan-500/15 text-cyan-300':'bg-blue-500/15 text-blue-300'}">${r.tag}</span>
-                            <span class="text-[10px] text-blue-500">${date}</span>
+                    const body=r.body||'';
+                    return `<div class="card-inner p-2.5">
+                        <div class="flex items-center justify-between gap-2 cursor-pointer" onclick="toggleReleaseBody(${i})">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <svg class="w-3 h-3 text-blue-500 transition-transform shrink-0" id="releaseArrow${i}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isCur?'bg-cyan-500/15 text-cyan-300':'bg-blue-500/15 text-blue-300'}">${r.tag}</span>
+                                <span class="text-[10px] text-blue-500">${date}</span>
+                            </div>
+                            ${isCur?'<span class="text-[10px] text-cyan-400 font-medium shrink-0">'+(currentLang==='en'?'Installed':'已安装')+'</span>':'<button onclick="event.stopPropagation();doUpdate(\''+r.tag+'\')" class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 font-medium shrink-0">'+(currentLang==='en'?'Update':'更新')+'</button>'}
                         </div>
-                        ${isCur?'<span class="text-[10px] text-cyan-400 font-medium">'+(currentLang==='en'?'Installed':'已安装')+'</span>':'<button onclick="doUpdate(\''+r.tag+'\')" class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 font-medium">'+(currentLang==='en'?'Update':'更新')+'</button>'}
+                        <div id="releaseBody${i}" class="release-body text-[10px] text-blue-500 leading-relaxed whitespace-pre-wrap break-all">${body}</div>
                     </div>`;
                 }).join('');
             }catch(e){document.getElementById('versionList').innerHTML='<div class="text-blue-500 text-xs">Failed to load</div>';}
@@ -461,9 +482,12 @@
                 }else{st.textContent='Error: '+(d.error||d.msg);st.className='mt-3 text-xs text-red-400';}
             }catch(e){st.textContent=(currentLang==='en'?'Update failed':'更新失败')+': '+e;st.className='mt-3 text-xs text-red-400';}
         }
+        function openVersion(){const o=document.getElementById('versionOverlay');o.classList.remove('hidden');o.style.opacity='0';requestAnimationFrame(()=>o.style.opacity='1');}
+        function closeVersion(){const o=document.getElementById('versionOverlay');o.style.opacity='0';setTimeout(()=>o.classList.add('hidden'),250);}
+        function toggleReleaseBody(i){const b=document.getElementById('releaseBody'+i);const a=document.getElementById('releaseArrow'+i);b.classList.toggle('open');a.style.transform=b.classList.contains('open')?'rotate(90deg)':'';}
         loadVersion();
 
-        const i18n={'加载中...':'Loading...','运行中':'Running','连接失败':'Offline','运行时间':'Uptime','硬件信息':'Hardware Info','CPU 型号':'CPU Model','主板':'Motherboard','系统 / 内核':'System / Kernel','内存模块':'Memory Modules','硬盘':'Disk Drives','网卡':'Network Cards','CPU 使用率':'CPU Usage','物理核心:':'Physical:','逻辑线程:':'Logical:','内存使用':'Memory Usage','已用:':'Used:','总计:':'Total:','总磁盘使用':'Disk Usage','显卡':'GPU','磁盘 I/O':'Disk I/O','读取':'Read','写入':'Write','CPU / 内存 趋势':'CPU / Memory Trend','磁盘分区':'Disk Partitions','暂无数据':'No data','网络流量':'Network Traffic','发送':'Sent','接收':'Recv','Top 进程':'Top Processes','名称':'Name','未检测到':'-','使用率':'Usage','温度':'Temp','显存':'VRAM','历史趋势':'History Trend','版本管理':'Version Manager','当前版本':'Current','最新版本':'Latest','有新版本':'Update available!'};
+        const i18n={'加载中...':'Loading...','运行中':'Running','连接失败':'Offline','运行时间':'Uptime','硬件信息':'Hardware Info','CPU 型号':'CPU Model','主板':'Motherboard','系统 / 内核':'System / Kernel','内存模块':'Memory Modules','硬盘':'Disk Drives','网卡':'Network Cards','CPU 使用率':'CPU Usage','物理核心:':'Physical:','逻辑线程:':'Logical:','内存使用':'Memory Usage','已用:':'Used:','总计:':'Total:','总磁盘使用':'Disk Usage','显卡':'GPU','磁盘 I/O':'Disk I/O','读取':'Read','写入':'Write','CPU / 内存 趋势':'CPU / Memory Trend','磁盘分区':'Disk Partitions','暂无数据':'No data','网络流量':'Network Traffic','发送':'Sent','接收':'Recv','Top 进程':'Top Processes','名称':'Name','未检测到':'-','使用率':'Usage','温度':'Temp','显存':'VRAM','历史趋势':'History Trend','版本管理':'Version Manager','当前版本':'Current','最新版本':'Latest','有新版本':'Update available!','版本':'Version'};
         const i18nReverse=Object.fromEntries(Object.entries(i18n).map(([k,v])=>[v,k]));
         let currentLang='zh';
         function translatePage(lang){const map=lang==='en'?i18n:i18nReverse;const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);const texts=[];let n;while(n=walker.nextNode())if(n.nodeValue.trim())texts.push(n);texts.forEach(t=>{let v=t.nodeValue;for(const[a,b]of Object.entries(map))v=v.split(a).join(b);t.nodeValue=v;});
@@ -472,6 +496,7 @@
             if(typeof diskChart!=='undefined'){diskChart.data.datasets[0].label=lang==='en'?'Read KB/s':'Read KB/s';diskChart.data.datasets[1].label=lang==='en'?'Write KB/s':'Write KB/s';diskChart.update('none');}
         }
         function toggleLang(){currentLang=currentLang==='zh'?'en':'zh';document.getElementById('langToggle').textContent=currentLang==='zh'?'EN':'中文';translatePage(currentLang);}
+        translatePage('zh');
     </script>
 </body>
 </html>

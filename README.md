@@ -36,7 +36,7 @@ Server Monitor 是一个轻量级的服务器监控面板，无需 Docker、无�
 
 #### Windows — `server-monitor.bat`
 
-下载：https://github.com/2099742859-lgtm/server-monitor/releases/download/v2/server-monitor.bat
+下载：https://github.com/2099742859-lgtm/server-monitor/releases/download/v1/server-monitor.bat
 
 ```cmd
 :: 下载后双击运行
@@ -45,10 +45,10 @@ server-monitor.bat
 
 #### Linux / macOS — `server-monitor.sh`
 
-下载：https://github.com/2099742859-lgtm/server-monitor/releases/download/v2/server-monitor.sh
+下载：https://github.com/2099742859-lgtm/server-monitor/releases/download/v1/server-monitor.sh
 
 ```bash
-curl -fsSL -o server-monitor.sh https://github.com/2099742859-lgtm/server-monitor/releases/download/v2/server-monitor.sh
+curl -fsSL -o server-monitor.sh https://github.com/2099742859-lgtm/server-monitor/releases/download/v1/server-monitor.sh
 bash server-monitor.sh
 ```
 
@@ -158,7 +158,7 @@ Two self-extracting installers are available, each embedding the full source as 
 
 #### Windows — `server-monitor.bat`
 
-Download: https://github.com/2099742859-lgtm/server-monitor/releases/download/v2/server-monitor.bat
+Download: https://github.com/2099742859-lgtm/server-monitor/releases/download/v1/server-monitor.bat
 
 ```cmd
 :: Download and double-click
@@ -167,10 +167,10 @@ server-monitor.bat
 
 #### Linux / macOS — `server-monitor.sh`
 
-Download: https://github.com/2099742859-lgtm/server-monitor/releases/download/v2/server-monitor.sh
+Download: https://github.com/2099742859-lgtm/server-monitor/releases/download/v1/server-monitor.sh
 
 ```bash
-curl -fsSL -o server-monitor.sh https://github.com/2099742859-lgtm/server-monitor/releases/download/v2/server-monitor.sh
+curl -fsSL -o server-monitor.sh https://github.com/2099742859-lgtm/server-monitor/releases/download/v1/server-monitor.sh
 bash server-monitor.sh
 ```
 
