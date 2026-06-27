@@ -7,10 +7,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        @font-face {
+            font-family: 'CheeseFont';
+            src: url('https://cdn.jsdelivr.net/gh/2099742859-lgtm/server-monitor@main/static/cheese.ttf') format('truetype');
+            font-weight: normal;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; color: #fff; min-height: 100vh; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
+        body { font-family: 'CheeseFont', sans-serif; color: #fff; min-height: 100vh; font-weight: 500; }
+        .mono { font-family: 'CheeseFont', monospace; font-weight: 600; }
         #wallpaper {
             position: fixed; inset: 0; width: 100%; height: 100%;
             background-size: cover; background-position: center;
@@ -36,7 +40,7 @@
         .bar-fill {
             height: 100%;
             border-radius: 9999px;
-            transition: width 0.5s;
+            transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
         }
         .btn-active {
             background: rgba(96,165,250,0.15);
@@ -80,22 +84,22 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold text-blue-500">Server Monitor</h1>
-                    <p class="text-blue-500 text-xs" id="hostname">Loading...</p>
+                    <p class="text-blue-500 text-sm" id="hostname">Loading...</p>
                 </div>
             </div>
             <div class="flex items-center gap-2 flex-wrap justify-end">
-                <button id="langToggle" onclick="toggleLang()" class="px-2.5 py-1.5 rounded-lg card text-xs text-blue-500 hover:text-blue-500 transition">EN</button>
-                <button onclick="openVersion()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg card text-xs text-blue-500 hover:text-blue-400 transition" title="Version">
+                <button id="langToggle" onclick="toggleLang()" class="px-2.5 py-1.5 rounded-lg card text-sm text-blue-500 hover:text-blue-500 transition">EN</button>
+                <button onclick="openVersion()" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg card text-sm text-blue-500 hover:text-blue-400 transition" title="Version">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6v6m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <span data-i18n="版本">Version</span>
                 </button>
                 <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg card">
                     <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot" id="statusDot"></div>
-                    <span class="text-xs text-blue-500" id="statusText">Running</span>
+                    <span class="text-sm font-semibold text-blue-500" id="statusText">Running</span>
                 </div>
                 <div class="text-right">
-                    <div class="text-[10px] text-blue-500" data-i18n="运行时间">Uptime</div>
-                    <div class="text-xs font-semibold mono text-blue-500" id="uptime">--</div>
+                    <div class="text-sm font-semibold text-blue-500" data-i18n="运行时间">Uptime</div>
+                    <div class="text-sm font-semibold mono text-blue-500" id="uptime">--</div>
                 </div>
             </div>
         </div>
@@ -110,37 +114,37 @@
             </h3>
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mb-3">
                 <div class="card-inner p-3">
-                    <div class="text-[10px] text-blue-500 mb-1" data-i18n="CPU 型号">CPU Model</div>
-                    <div class="text-xs font-medium text-blue-500 mono break-all" id="cpuModel">--</div>
+                    <div class="text-sm text-blue-500 mb-1" data-i18n="CPU 型号">CPU Model</div>
+                    <div class="text-sm font-medium text-blue-500 mono break-all" id="cpuModel">--</div>
                 </div>
                 <div class="card-inner p-3">
-                    <div class="text-[10px] text-blue-500 mb-1" data-i18n="主板">Motherboard</div>
-                    <div class="text-xs font-medium text-blue-500 mono break-all" id="motherboard">--</div>
+                    <div class="text-sm text-blue-500 mb-1" data-i18n="主板">Motherboard</div>
+                    <div class="text-sm font-medium text-blue-500 mono break-all" id="motherboard">--</div>
                 </div>
                 <div class="card-inner p-3">
-                    <div class="text-[10px] text-blue-500 mb-1">BIOS</div>
-                    <div class="text-xs font-medium text-blue-500 mono break-all" id="bios">--</div>
+                    <div class="text-sm text-blue-500 mb-1">BIOS</div>
+                    <div class="text-sm font-medium text-blue-500 mono break-all" id="bios">--</div>
                 </div>
                 <div class="card-inner p-3">
-                    <div class="text-[10px] text-blue-500 mb-1" data-i18n="系统 / 内核">System / Kernel</div>
-                    <div class="text-xs font-medium text-blue-500 mono" id="systemInfo">--</div>
-                    <div class="text-[10px] text-blue-500 mono mt-0.5" id="platformVersion"></div>
-                    <div class="text-[10px] text-blue-500 mono" id="kernelVersion"></div>
+                    <div class="text-sm text-blue-500 mb-1" data-i18n="系统 / 内核">System / Kernel</div>
+                    <div class="text-sm font-medium text-blue-500 mono" id="systemInfo">--</div>
+                    <div class="text-sm text-blue-500 mono mt-0.5" id="platformVersion"></div>
+                    <div class="text-sm text-blue-500 mono" id="kernelVersion"></div>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                 <div class="card-inner p-3">
-                    <div class="text-[10px] text-blue-500 mb-2" data-i18n="内存模块">Memory Modules</div>
-                    <div id="memoryModules" class="space-y-1 text-xs mono"></div>
+                    <div class="text-sm text-blue-500 mb-2" data-i18n="内存模块">Memory Modules</div>
+                    <div id="memoryModules" class="space-y-1 text-sm mono"></div>
                 </div>
                 <div class="card-inner p-3">
-                    <div class="text-[10px] text-blue-500 mb-2" data-i18n="硬盘">Disk Drives</div>
-                    <div id="diskDrives" class="space-y-1 text-xs mono"></div>
+                    <div class="text-sm text-blue-500 mb-2" data-i18n="硬盘">Disk Drives</div>
+                    <div id="diskDrives" class="space-y-1 text-sm mono"></div>
                 </div>
             </div>
             <div class="card-inner p-3">
-                <div class="text-[10px] text-blue-500 mb-2" data-i18n="网卡">Network Cards</div>
-                <div id="networkCards" class="space-y-1 text-xs mono"></div>
+                <div class="text-sm text-blue-500 mb-2" data-i18n="网卡">Network Cards</div>
+                <div id="networkCards" class="space-y-1 text-sm mono"></div>
             </div>
         </div>
 
@@ -152,7 +156,7 @@
                     <span class="text-2xl font-bold text-blue-500 mono" id="cpuPercent">0%</span>
                 </div>
                 <div class="h-2 bar-bg mb-3"><div id="cpuBar" class="bar-fill bg-cyan-400" style="width:0%"></div></div>
-                <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="grid grid-cols-2 gap-2 text-sm">
                     <span class="text-blue-500"><span data-i18n="物理核心:">Physical:</span> <span class="text-blue-500 mono" id="cpuPhysical">--</span></span>
                     <span class="text-blue-500"><span data-i18n="逻辑线程:">Logical:</span> <span class="text-blue-500 mono" id="cpuLogical">--</span></span>
                 </div>
@@ -163,7 +167,7 @@
                     <span class="text-2xl font-bold text-blue-500 mono" id="memPercent">0%</span>
                 </div>
                 <div class="h-2 bar-bg mb-3"><div id="memBar" class="bar-fill bg-pink-400" style="width:0%"></div></div>
-                <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="grid grid-cols-2 gap-2 text-sm">
                     <span class="text-blue-500"><span data-i18n="已用:">Used:</span> <span class="text-blue-500 mono" id="memUsed">--</span></span>
                     <span class="text-blue-500"><span data-i18n="总计:">Total:</span> <span class="text-blue-500 mono" id="memTotal">--</span></span>
                 </div>
@@ -174,7 +178,7 @@
                     <span class="text-2xl font-bold text-blue-500 mono" id="diskPercent">0%</span>
                 </div>
                 <div class="h-2 bar-bg mb-3"><div id="diskBar" class="bar-fill bg-amber-400" style="width:0%"></div></div>
-                <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="grid grid-cols-2 gap-2 text-sm">
                     <span class="text-blue-500"><span data-i18n="已用:">Used:</span> <span class="text-blue-500 mono" id="diskUsed">--</span></span>
                     <span class="text-blue-500"><span data-i18n="总计:">Total:</span> <span class="text-blue-500 mono" id="diskTotal">--</span></span>
                 </div>
@@ -192,11 +196,11 @@
             <h3 class="text-sm font-semibold text-blue-500 mb-3" data-i18n="磁盘 I/O">Disk I/O</h3>
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <div class="card-inner p-3">
-                    <div class="text-[10px] text-blue-500 mb-1" data-i18n="读取">Read</div>
+                    <div class="text-sm text-blue-500 mb-1" data-i18n="读取">Read</div>
                     <div class="text-lg font-bold text-blue-500 mono" id="diskRead">--</div>
                 </div>
                 <div class="card-inner p-3">
-                    <div class="text-[10px] text-blue-500 mb-1" data-i18n="写入">Write</div>
+                    <div class="text-sm text-blue-500 mb-1" data-i18n="写入">Write</div>
                     <div class="text-lg font-bold text-blue-500 mono" id="diskWrite">--</div>
                 </div>
             </div>
@@ -208,14 +212,14 @@
             <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <h3 class="text-sm font-semibold text-blue-500" data-i18n="历史趋势">History Trend</h3>
                 <div class="flex items-center gap-1" id="historyRangeBtns">
-                    <button data-range="1h" class="hist-btn px-2.5 py-1 rounded-lg text-xs btn-active">1h</button>
-                    <button data-range="6h" class="hist-btn px-2.5 py-1 rounded-lg text-xs btn-ghost">6h</button>
-                    <button data-range="24h" class="hist-btn px-2.5 py-1 rounded-lg text-xs btn-ghost">24h</button>
-                    <button data-range="7d" class="hist-btn px-2.5 py-1 rounded-lg text-xs btn-ghost">7d</button>
-                    <span class="text-[10px] text-blue-500 ml-1" id="historyCount"></span>
+                    <button data-range="1h" class="hist-btn px-2.5 py-1 rounded-lg text-sm btn-active">1h</button>
+                    <button data-range="6h" class="hist-btn px-2.5 py-1 rounded-lg text-sm btn-ghost">6h</button>
+                    <button data-range="24h" class="hist-btn px-2.5 py-1 rounded-lg text-sm btn-ghost">24h</button>
+                    <button data-range="7d" class="hist-btn px-2.5 py-1 rounded-lg text-sm btn-ghost">7d</button>
+                    <span class="text-sm text-blue-500 ml-1" id="historyCount"></span>
                 </div>
             </div>
-            <div class="flex gap-3 mb-2 text-[11px]">
+            <div class="flex gap-3 mb-2 text-sm">
                 <label class="flex items-center gap-1 text-blue-500 cursor-pointer"><input type="checkbox" id="histCpu" checked class="accent-cyan-400"> CPU</label>
                 <label class="flex items-center gap-1 text-blue-500 cursor-pointer"><input type="checkbox" id="histMem" checked class="accent-pink-400"> MEM</label>
                 <label class="flex items-center gap-1 text-blue-500 cursor-pointer"><input type="checkbox" id="histNet" class="accent-amber-400"> NET</label>
@@ -233,7 +237,7 @@
             <div class="card p-4 md:p-5">
                 <h3 class="text-sm font-semibold text-blue-500 mb-3" data-i18n="磁盘分区">Disk Partitions</h3>
                 <div id="diskPartitions" class="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    <div class="text-blue-500 text-xs" data-i18n="暂无数据">No data</div>
+                    <div class="text-blue-500 text-sm" data-i18n="暂无数据">No data</div>
                 </div>
             </div>
         </div>
@@ -244,11 +248,11 @@
                 <h3 class="text-sm font-semibold text-blue-500 mb-3" data-i18n="网络流量">Network Traffic</h3>
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div class="card-inner p-3">
-                        <div class="text-[10px] text-blue-500 mb-1" data-i18n="发送">Sent</div>
+                        <div class="text-sm text-blue-500 mb-1" data-i18n="发送">Sent</div>
                         <div class="text-lg font-bold text-blue-500 mono" id="netSent">--</div>
                     </div>
                     <div class="card-inner p-3">
-                        <div class="text-[10px] text-blue-500 mb-1" data-i18n="接收">Recv</div>
+                        <div class="text-sm text-blue-500 mb-1" data-i18n="接收">Recv</div>
                         <div class="text-lg font-bold text-blue-500 mono" id="netRecv">--</div>
                     </div>
                 </div>
@@ -257,7 +261,7 @@
             <div class="card p-4 md:p-5">
                 <h3 class="text-sm font-semibold text-blue-500 mb-3" data-i18n="Top 进程">Top Processes</h3>
                 <div class="overflow-x-auto max-h-56 overflow-y-auto pr-1">
-                    <table class="w-full text-xs">
+                    <table class="w-full text-sm">
                         <thead class="text-blue-500">
                             <tr class="divider">
                                 <th class="text-left py-1.5 font-medium">PID</th>
@@ -285,29 +289,29 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-2 mb-4 flex-wrap">
-                    <span class="text-[10px] text-blue-500" data-i18n="当前版本">Current</span>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/15 text-cyan-300" id="currentVer">--</span>
-                    <span class="text-[10px] text-blue-500" data-i18n="最新版本">Latest</span>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-300" id="latestVer">--</span>
-                    <span class="text-[10px] hidden text-amber-400 font-medium px-2 py-0.5 rounded bg-amber-500/10" id="updateBadge" data-i18n="有新版本">Update available!</span>
+                    <span class="text-sm font-semibold text-blue-500" data-i18n="当前版本">Current</span>
+                    <span class="px-2 py-0.5 rounded text-sm font-bold bg-cyan-500/15 text-cyan-300" id="currentVer">--</span>
+                    <span class="text-sm font-semibold text-blue-500" data-i18n="最新版本">Latest</span>
+                    <span class="px-2 py-0.5 rounded text-sm font-bold bg-emerald-500/15 text-emerald-300" id="latestVer">--</span>
+                    <span class="text-sm hidden text-amber-400 font-medium px-2 py-0.5 rounded bg-amber-500/10" id="updateBadge" data-i18n="有新版本">Update available!</span>
                 </div>
-                <div class="flex items-center gap-2 mb-3 text-[10px]">
+                <div class="flex items-center gap-2 mb-3 text-sm">
                     <span class="text-blue-500" data-i18n="镜像源">Mirror</span>
-                    <select id="mirrorSelect" onchange="switchMirror(this.value)" class="card-inner px-2 py-1 rounded text-blue-500 text-[10px] border-0 outline-none cursor-pointer">
+                    <select id="mirrorSelect" onchange="switchMirror(this.value)" class="card-inner px-2 py-1 rounded text-blue-500 text-sm border-0 outline-none cursor-pointer">
                         <option value="github">GitHub</option>
                         <option value="ghproxy">ghproxy.com</option>
                         <option value="moeyy">moeyy.xyz</option>
                         <option value="kkgithub">kkgithub.com</option>
                     </select>
-                    <a href="https://github.com/2099742859-lgtm/server-monitor" target="_blank" class="ml-auto flex items-center gap-1 text-blue-500 hover:text-blue-400 text-[10px]">
+                    <a href="https://github.com/2099742859-lgtm/server-monitor" target="_blank" class="ml-auto flex items-center gap-1 text-blue-500 hover:text-blue-400 text-sm">
                         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
                         GitHub
                     </a>
                 </div>
                 <div id="versionList" class="space-y-1.5">
-                    <div class="text-blue-500 text-xs" data-i18n="加载中...">Loading...</div>
+                    <div class="text-blue-500 text-sm" data-i18n="加载中...">Loading...</div>
                 </div>
-                <div id="updateStatus" class="mt-4 text-xs text-blue-500 hidden"></div>
+                <div id="updateStatus" class="mt-4 text-sm text-blue-500 hidden"></div>
             </div>
         </div>
     </div>
@@ -368,7 +372,7 @@
         function fmtHistTime(ts,range){const d=new Date(ts);if(range==='7d'||range==='24h')return d.toLocaleDateString([],{month:'short',day:'numeric'})+' '+d.getHours()+':00';return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
         async function loadHistory(range){
             currentRange=range;
-            document.querySelectorAll('.hist-btn').forEach(b=>{b.className='hist-btn px-2.5 py-1 rounded-lg text-xs '+(b.dataset.range===range?'btn-active':'btn-ghost');});
+            document.querySelectorAll('.hist-btn').forEach(b=>{b.className='hist-btn px-2.5 py-1 rounded-lg text-sm '+(b.dataset.range===range?'btn-active':'btn-ghost');});
             try{const res=await fetch('/api/history?range='+range);if(!res.ok)throw 0;const data=await res.json();const pts=data.points||[];const bk=data.bucket||60;
             document.getElementById('historyCount').textContent=pts.length+' pts (avg '+bk+'s)';
             const lbl=pts.map(p=>fmtHistTime(p.ts,range));const ds=[];
@@ -391,9 +395,9 @@
             document.getElementById('systemInfo').textContent=data.system.hostname+' · '+data.system.platform;
             const pv=document.getElementById('platformVersion');if(pv)pv.textContent=data.system.platform_version||'';
             const kv=document.getElementById('kernelVersion');if(kv)kv.textContent=data.system.kernel||'';
-            document.getElementById('networkCards').innerHTML=(data.network_cards||[]).map(n=>`<div class="flex flex-wrap justify-between gap-1 py-1 divider last:border-0"><span class="text-blue-500">${n.name}</span><span class="text-blue-500 text-xs">${n.mac||''} ${n.ips&&n.ips.length?n.ips[0]:''}</span></div>`).join('')||'<span class="text-blue-500">-</span>';
+            document.getElementById('networkCards').innerHTML=(data.network_cards||[]).map(n=>`<div class="flex flex-wrap justify-between gap-1 py-1 divider last:border-0"><span class="text-blue-500">${n.name}</span><span class="text-blue-500 text-sm">${n.mac||''} ${n.ips&&n.ips.length?n.ips[0]:''}</span></div>`).join('')||'<span class="text-blue-500">-</span>';
             document.getElementById('memoryModules').innerHTML=(data.memory.modules||[]).map(m=>`<div class="flex justify-between py-1 divider last:border-0"><span class="text-blue-500">${m.manufacturer} ${m.part_number}</span><span class="text-blue-500">${m.size_text} @ ${m.speed}</span></div>`).join('')||'<span class="text-blue-500">-</span>';
-            document.getElementById('diskDrives').innerHTML=(data.disk.drives||[]).map(d=>`<div class="flex flex-wrap justify-between gap-1 py-1 divider last:border-0"><span class="text-blue-500">${d.model}</span><span class="text-blue-500 text-xs">${d.size_text} · ${d.interface}</span></div>`).join('')||'<span class="text-blue-500">-</span>';
+            document.getElementById('diskDrives').innerHTML=(data.disk.drives||[]).map(d=>`<div class="flex flex-wrap justify-between gap-1 py-1 divider last:border-0"><span class="text-blue-500">${d.model}</span><span class="text-blue-500 text-sm">${d.size_text} · ${d.interface}</span></div>`).join('')||'<span class="text-blue-500">-</span>';
         }
 
         function updateUI(data){
@@ -419,8 +423,8 @@
 
             document.getElementById('diskPartitions').innerHTML=data.disk.partitions.map(p=>{
                 const lbl=p.mountpoint&&p.mountpoint!=='None'?p.mountpoint:p.device;const pct=typeof p.percent==='number'?p.percent:0;
-                return `<div class="card-inner p-2.5"><div class="flex justify-between text-xs mb-1.5"><span class="text-blue-500">${lbl} <span class="text-blue-500 mono">${p.fstype||''}</span></span><span class="text-blue-500 mono">${pct.toFixed(1)}%</span></div><div class="h-1.5 bar-bg"><div class="bar-fill bg-white/30" style="width:${pct}%"></div></div><div class="text-[10px] text-blue-500 mt-1 mono">${formatBytes(p.used)} / ${formatBytes(p.total)}</div></div>`;
-            }).join('')||'<div class="text-blue-500 text-xs" data-i18n="暂无数据">No data</div>';
+                return `<div class="card-inner p-2.5"><div class="flex justify-between text-sm mb-1.5"><span class="text-blue-500">${lbl} <span class="text-blue-500 mono">${p.fstype||''}</span></span><span class="text-blue-500 mono">${pct.toFixed(1)}%</span></div><div class="h-1.5 bar-bg"><div class="bar-fill bg-white/30" style="width:${pct}%"></div></div><div class="text-sm text-blue-500 mt-1 mono">${formatBytes(p.used)} / ${formatBytes(p.total)}</div></div>`;
+            }).join('')||'<div class="text-blue-500 text-sm" data-i18n="暂无数据">No data</div>';
 
             const sentRate=data.network.sent_rate||0,recvRate=data.network.recv_rate||0;
             document.getElementById('netSent').textContent=sentRate.toFixed(1)+' KB/s';
@@ -431,7 +435,7 @@
             const gpuSection=document.getElementById('gpuSection');
             if(data.gpu&&data.gpu.gpus&&data.gpu.gpus.length>0){
                 gpuSection.style.display='block';
-                document.getElementById('gpuCards').innerHTML=data.gpu.gpus.map(g=>`<div class="card-inner p-3"><div class="text-xs font-medium text-blue-500 mb-2 break-all">${g.name}</div><div class="grid grid-cols-2 gap-1 text-xs mb-2"><span class="text-blue-500" data-i18n="使用率">Usage</span><span class="text-right text-blue-500 mono">${g.usage.toFixed?g.usage.toFixed(1):g.usage}%</span><span class="text-blue-500" data-i18n="温度">Temp</span><span class="text-right text-blue-500 mono">${g.temperature?g.temperature.toFixed(1):'--'}°C</span><span class="text-blue-500" data-i18n="显存">VRAM</span><span class="text-right text-blue-500 mono">${formatBytes(g.memory_used||0)} / ${formatBytes(g.memory_total||0)}</span></div><div class="h-1.5 bar-bg"><div class="bar-fill bg-amber-400" style="width:${g.usage}%"></div></div></div>`).join('');
+                document.getElementById('gpuCards').innerHTML=data.gpu.gpus.map(g=>`<div class="card-inner p-3"><div class="text-sm font-medium text-blue-500 mb-2 break-all">${g.name}</div><div class="grid grid-cols-2 gap-1 text-sm mb-2"><span class="text-blue-500" data-i18n="使用率">Usage</span><span class="text-right text-blue-500 mono">${g.usage.toFixed?g.usage.toFixed(1):g.usage}%</span><span class="text-blue-500" data-i18n="温度">Temp</span><span class="text-right text-blue-500 mono">${g.temperature?g.temperature.toFixed(1):'--'}°C</span><span class="text-blue-500" data-i18n="显存">VRAM</span><span class="text-right text-blue-500 mono">${formatBytes(g.memory_used||0)} / ${formatBytes(g.memory_total||0)}</span></div><div class="h-1.5 bar-bg"><div class="bar-fill bg-amber-400" style="width:${g.usage}%"></div></div></div>`).join('');
             }else gpuSection.style.display='none';
 
             cpuData.push(data.cpu.percent);cpuData.shift();memData.push(data.memory.percent);memData.shift();
@@ -456,7 +460,7 @@
                 const badge=document.getElementById('updateBadge');
                 badge.classList.toggle('hidden',!d.has_update);
                 const list=document.getElementById('versionList');
-                if(!d.releases||d.releases.length===0){list.innerHTML='<div class="text-blue-500 text-xs">No releases found</div>';return;}
+                if(!d.releases||d.releases.length===0){list.innerHTML='<div class="text-blue-500 text-sm">No releases found</div>';return;}
                 list.innerHTML=d.releases.map((r,i)=>{
                     const isCur=r.tag===d.current;
                     const date=new Date(r.date).toLocaleDateString();
@@ -465,36 +469,36 @@
                         <div class="flex items-center justify-between gap-2 cursor-pointer" onclick="toggleReleaseBody(${i})">
                             <div class="flex items-center gap-2 min-w-0">
                                 <svg class="w-3 h-3 text-blue-500 transition-transform shrink-0" id="releaseArrow${i}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isCur?'bg-cyan-500/15 text-cyan-300':'bg-blue-500/15 text-blue-300'}">${r.tag}</span>
-                                <span class="text-[10px] text-blue-500">${date}</span>
+                                <span class="px-1.5 py-0.5 rounded text-sm font-bold ${isCur?'bg-cyan-500/15 text-cyan-300':'bg-blue-500/15 text-blue-300'}">${r.tag}</span>
+                                <span class="text-sm font-semibold text-blue-500">${date}</span>
                             </div>
-                            ${isCur?'<span class="text-[10px] text-cyan-400 font-medium shrink-0">'+(currentLang==='en'?'Installed':'已安装')+'</span>':'<button onclick="event.stopPropagation();doUpdate(\''+r.tag+'\')" class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 font-medium shrink-0">'+(currentLang==='en'?'Update':'更新')+'</button>'}
+                            ${isCur?'<span class="text-sm text-cyan-400 font-medium shrink-0">'+(currentLang==='en'?'Installed':'已安装')+'</span>':'<button onclick="event.stopPropagation();doUpdate(\''+r.tag+'\')" class="px-2 py-0.5 rounded text-sm bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 font-medium shrink-0">'+(currentLang==='en'?'Update':'更新')+'</button>'}
                         </div>
-                        <div id="releaseBody${i}" class="release-body text-[10px] text-blue-500 leading-relaxed whitespace-pre-wrap break-all">${body}</div>
+                        <div id="releaseBody${i}" class="release-body text-sm text-blue-500 leading-relaxed whitespace-pre-wrap break-all">${body}</div>
                     </div>`;
                 }).join('');
-            }catch(e){document.getElementById('versionList').innerHTML='<div class="text-blue-500 text-xs">Failed to load</div>';}
+            }catch(e){document.getElementById('versionList').innerHTML='<div class="text-blue-500 text-sm">Failed to load</div>';}
         }
         async function doUpdate(tag){
             const st=document.getElementById('updateStatus');
             const mirror=document.getElementById('mirrorSelect').value;
             st.classList.remove('hidden');
             st.textContent=(currentLang==='en'?'Updating to ':'正在更新到 ')+tag+'...';
-            st.className='mt-3 text-xs text-amber-400';
+            st.className='mt-3 text-sm text-amber-400';
             try{
                 const r=await fetch('/api/update?tag='+tag+'&mirror='+mirror,{method:'POST'});
                 const d=await r.json();
                 if(d.ok){
                     st.textContent=(currentLang==='en'?'Updated! Reconnecting...':'更新完成！正在重连...')+' '+d.msg;
-                    st.className='mt-3 text-xs text-emerald-400';
+                    st.className='mt-3 text-sm text-emerald-400';
                     let tries=0;
                     const reconnect=setInterval(()=>{
                         tries++;
                         fetch('/api/version').then(()=>{clearInterval(reconnect);location.reload();}).catch(()=>{});
-                        if(tries>30){clearInterval(reconnect);st.textContent=(currentLang==='en'?'Reconnect failed, please refresh':'重连失败，请手动刷新');st.className='mt-3 text-xs text-red-400';}
+                        if(tries>30){clearInterval(reconnect);st.textContent=(currentLang==='en'?'Reconnect failed, please refresh':'重连失败，请手动刷新');st.className='mt-3 text-sm text-red-400';}
                     },1000);
-                }else{st.textContent='Error: '+(d.error||d.msg);st.className='mt-3 text-xs text-red-400';}
-            }catch(e){st.textContent=(currentLang==='en'?'Update failed':'更新失败')+': '+e;st.className='mt-3 text-xs text-red-400';}
+                }else{st.textContent='Error: '+(d.error||d.msg);st.className='mt-3 text-sm text-red-400';}
+            }catch(e){st.textContent=(currentLang==='en'?'Update failed':'更新失败')+': '+e;st.className='mt-3 text-sm text-red-400';}
         }
         function openVersion(){const o=document.getElementById('versionOverlay');o.classList.remove('hidden');o.style.opacity='0';requestAnimationFrame(()=>o.style.opacity='1');}
         function closeVersion(){const o=document.getElementById('versionOverlay');o.style.opacity='0';setTimeout(()=>o.classList.add('hidden'),250);}
