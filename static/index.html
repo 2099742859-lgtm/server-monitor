@@ -297,12 +297,18 @@
                 </div>
                 <div class="flex items-center gap-2 mb-3 text-sm">
                     <span class="text-blue-500" data-i18n="镜像源">Mirror</span>
-                    <select id="mirrorSelect" onchange="switchMirror(this.value)" class="card-inner px-2 py-1 rounded text-blue-500 text-sm border-0 outline-none cursor-pointer">
-                        <option value="github">GitHub</option>
-                        <option value="ghproxy">ghproxy.com</option>
-                        <option value="moeyy">moeyy.xyz</option>
-                        <option value="kkgithub">kkgithub.com</option>
-                    </select>
+                    <div class="relative">
+                        <button id="mirrorBtn" onclick="toggleMirrorMenu()" class="card-inner px-2 py-1 rounded text-blue-500 text-sm cursor-pointer flex items-center gap-1 hover:text-blue-400">
+                            <span id="mirrorLabel">GitHub</span>
+                            <svg class="w-3 h-3 transition-transform" id="mirrorArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="mirrorMenu" class="hidden absolute left-0 top-full mt-1 z-50 card-inner p-1 min-w-[140px]" style="background:rgba(10,15,30,0.95)">
+                            <button onclick="selectMirror('github','GitHub')" class="w-full text-left px-2 py-1.5 rounded text-sm text-blue-500 hover:bg-blue-500/15 hover:text-blue-400 transition">GitHub</button>
+                            <button onclick="selectMirror('ghproxy','ghproxy.com')" class="w-full text-left px-2 py-1.5 rounded text-sm text-blue-500 hover:bg-blue-500/15 hover:text-blue-400 transition">ghproxy.com</button>
+                            <button onclick="selectMirror('moeyy','moeyy.xyz')" class="w-full text-left px-2 py-1.5 rounded text-sm text-blue-500 hover:bg-blue-500/15 hover:text-blue-400 transition">moeyy.xyz</button>
+                            <button onclick="selectMirror('kkgithub','kkgithub.com')" class="w-full text-left px-2 py-1.5 rounded text-sm text-blue-500 hover:bg-blue-500/15 hover:text-blue-400 transition">kkgithub.com</button>
+                        </div>
+                    </div>
                     <a href="https://github.com/2099742859-lgtm/server-monitor" target="_blank" class="ml-auto flex items-center gap-1 text-blue-500 hover:text-blue-400 text-sm">
                         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
                         GitHub
@@ -481,7 +487,7 @@
         }
         async function doUpdate(tag){
             const st=document.getElementById('updateStatus');
-            const mirror=document.getElementById('mirrorSelect').value;
+            const mirror=localStorage.getItem('sm_mirror')||'github';
             st.classList.remove('hidden');
             st.textContent=(currentLang==='en'?'Updating to ':'正在更新到 ')+tag+'...';
             st.className='mt-3 text-sm text-amber-400';
@@ -503,9 +509,12 @@
         function openVersion(){const o=document.getElementById('versionOverlay');o.classList.remove('hidden');o.style.opacity='0';requestAnimationFrame(()=>o.style.opacity='1');}
         function closeVersion(){const o=document.getElementById('versionOverlay');o.style.opacity='0';setTimeout(()=>o.classList.add('hidden'),250);}
         function toggleReleaseBody(i){const b=document.getElementById('releaseBody'+i);const a=document.getElementById('releaseArrow'+i);b.classList.toggle('open');a.style.transform=b.classList.contains('open')?'rotate(90deg)':'';}
-        function switchMirror(v){localStorage.setItem('sm_mirror',v);}
-        const savedMirror=localStorage.getItem('sm_mirror');
-        if(savedMirror)document.getElementById('mirrorSelect').value=savedMirror;
+        function toggleMirrorMenu(){const m=document.getElementById('mirrorMenu');const a=document.getElementById('mirrorArrow');m.classList.toggle('hidden');a.style.transform=m.classList.contains('hidden')?'':'rotate(180deg)';}
+        function selectMirror(val,label){document.getElementById('mirrorLabel').textContent=label;document.getElementById('mirrorMenu').classList.add('hidden');document.getElementById('mirrorArrow').style.transform='';localStorage.setItem('sm_mirror',val);}
+        document.addEventListener('click',function(e){if(!e.target.closest('#mirrorBtn')&&!e.target.closest('#mirrorMenu')){document.getElementById('mirrorMenu').classList.add('hidden');document.getElementById('mirrorArrow').style.transform='';}});
+        const mirrorLabels={'github':'GitHub','ghproxy':'ghproxy.com','moeyy':'moeyy.xyz','kkgithub':'kkgithub.com'};
+        const savedMirror=localStorage.getItem('sm_mirror')||'github';
+        if(savedMirror!=='github'){document.getElementById('mirrorLabel').textContent=mirrorLabels[savedMirror]||'GitHub';}
         loadVersion();
 
         const i18n={'加载中...':'Loading...','运行中':'Running','连接失败':'Offline','运行时间':'Uptime','硬件信息':'Hardware Info','CPU 型号':'CPU Model','主板':'Motherboard','系统 / 内核':'System / Kernel','内存模块':'Memory Modules','硬盘':'Disk Drives','网卡':'Network Cards','CPU 使用率':'CPU Usage','物理核心:':'Physical:','逻辑线程:':'Logical:','内存使用':'Memory Usage','已用:':'Used:','总计:':'Total:','总磁盘使用':'Disk Usage','显卡':'GPU','磁盘 I/O':'Disk I/O','读取':'Read','写入':'Write','CPU / 内存 趋势':'CPU / Memory Trend','磁盘分区':'Disk Partitions','暂无数据':'No data','网络流量':'Network Traffic','发送':'Sent','接收':'Recv','Top 进程':'Top Processes','名称':'Name','未检测到':'-','使用率':'Usage','温度':'Temp','显存':'VRAM','历史趋势':'History Trend','版本管理':'Version Manager','当前版本':'Current','最新版本':'Latest','有新版本':'Update available!','版本':'Version','镜像源':'Mirror'};
