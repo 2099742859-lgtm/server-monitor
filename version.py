@@ -81,8 +81,8 @@ def _backup(script_dir):
     backup_dir = script_dir + '.backup'
     if os.path.exists(backup_dir):
         shutil.rmtree(backup_dir)
-    shutil.copytree(script_dir, backup_dir, dirs_existorder=False,
-                    ignore=shutil.ignore_patterns('.venv', '__pycache__', 'history.json', '.git'))
+    shutil.copytree(script_dir, backup_dir, dirs_exist_ok=False,
+                    ignore=shutil.ignore_patterns('.venv', '__pycache__', 'history.json', '.git', '.backup'))
     return backup_dir
 
 
@@ -90,7 +90,7 @@ def _restore(backup_dir, script_dir):
     if not os.path.exists(backup_dir):
         return False
     shutil.rmtree(script_dir, ignore_errors=True)
-    shutil.copytree(backup_dir, script_dir, dirs_existorder=False,
+    shutil.copytree(backup_dir, script_dir, dirs_exist_ok=False,
                     ignore=shutil.ignore_patterns('.backup'))
     return True
 
